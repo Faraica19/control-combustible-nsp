@@ -10,6 +10,7 @@ type Equipo = {
   tipoMedidor: "ODOMETRO" | "HOROMETRO";
   tipoCombustible: "DIESEL" | "GASOLINA";
   lecturaActual: number;
+  area: { nombre: string };
 };
 
 export default function NuevaSolicitudForm({ equipos }: { equipos: Equipo[] }) {
@@ -52,7 +53,7 @@ export default function NuevaSolicitudForm({ equipos }: { equipos: Equipo[] }) {
         {equiposFiltrados.length === 0 ? (
           <p className="text-sm text-zinc-500">
             No hay equipos de {tipoCombustible === "DIESEL" ? "diésel" : "gasolina"}{" "}
-            en tu área.
+            registrados.
           </p>
         ) : (
           <select
@@ -63,7 +64,7 @@ export default function NuevaSolicitudForm({ equipos }: { equipos: Equipo[] }) {
           >
             {equiposFiltrados.map((e) => (
               <option key={e.id} value={e.id}>
-                {e.codigo} — {e.nombre} (
+                {e.codigo} — {e.nombre} · {e.area.nombre} (
                 {e.tipoMedidor === "ODOMETRO" ? "odómetro" : "horómetro"}:{" "}
                 {e.lecturaActual})
               </option>

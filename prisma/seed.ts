@@ -77,6 +77,19 @@ async function main() {
     },
   });
 
+  const solicitanteSP = await db.user.upsert({
+    where: { email: "aemilioaguilar1984@gmail.com" },
+    update: {},
+    create: {
+      nombre: "Emilio Aguilar",
+      email: "aemilioaguilar1984@gmail.com",
+      passwordHash: await hash("Emilio123!"),
+      rol: "SOLICITANTE",
+      perfilSolicitante: "OPERADOR",
+      areaId: areaSP.id,
+    },
+  });
+
   const consultaWalkiria = await db.user.upsert({
     where: { email: "ewdona@greenpower.com.ni" },
     update: {},
@@ -253,6 +266,7 @@ async function main() {
     bodega: bodega.email,
     solicitanteOyM: solicitanteOyM.email,
     solicitanteSS: solicitanteSS.email,
+    solicitanteSP: solicitanteSP.email,
     consultaWalkiria: consultaWalkiria.email,
     consultaMiguel: consultaMiguel.email,
     equipos: equipos.map((e) => `${e.codigo} (${e.tipoCombustible})`).join(", "),

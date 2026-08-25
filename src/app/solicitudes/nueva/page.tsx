@@ -3,10 +3,10 @@ import { requireRol } from "@/lib/permisos";
 import NuevaSolicitudForm from "./NuevaSolicitudForm";
 
 export default async function NuevaSolicitudPage() {
-  const session = await requireRol("SOLICITANTE", "BODEGA", "ADMIN");
+  await requireRol("SOLICITANTE", "BODEGA", "ADMIN");
 
   const equipos = await db.equipo.findMany({
-    where: { areaId: session.user.areaId, activo: true },
+    where: { activo: true },
     orderBy: { nombre: "asc" },
     select: {
       id: true,
@@ -15,6 +15,7 @@ export default async function NuevaSolicitudPage() {
       tipoMedidor: true,
       tipoCombustible: true,
       lecturaActual: true,
+      area: { select: { nombre: true } },
     },
   });
 
@@ -26,8 +27,7 @@ export default async function NuevaSolicitudPage() {
 
       {equipos.length === 0 ? (
         <p className="text-sm text-zinc-500">
-          No hay equipos activos registrados en tu área. Contacta a un
-          administrador.
+          No hay equipos activos registrados. Contacta a un administrador.
         </p>
       ) : (
         <NuevaSolicitudForm equipos={equipos} />
