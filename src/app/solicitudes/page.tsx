@@ -1,0 +1,93 @@
+import Link from "next/link";
+import { db } from "@/lib/db";
+import { requireSession } from "@/lib/permisos";
+import EstadoBadge from "@/components/EstadoBadge";
+
+export default async function SolicitudesPage() {
+  const session = await requireSession();
+  const { rol, id: userId } = session.user;
+
+  const where = rol === "SOLICITANTE" ? { solicitanteId: userId } : undefined;
+
+  const solicitudes = await db.solicitud.findMany({
+    where,
+    include: { equipo: true, solicitante: true, area: true },
+    orderBy: { fechaSolicitud: "desc" },
+    take: 100,
+  });
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-zinc-900">Solicitudes</h1>
+        <div className="flex gap-2">
+          <a
+            href="/api/export/solicitudes"
+            className="rounded border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+          >
+            Exportar a Excel
+          </a>
+          {rol !== "CONSULTA" && (
+            <Link
+              href="/solicitudes/nueva"
+              className="rounded bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+            >
+              Nueva solicitud
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+        <table className="w-full text-sm">
+          <thead className="bg-zinc-50 text-left text-zinc-500">
+            <tr>
+              <th className="px-3 py-2">Folio</th>
+              <th className="px-3 py-2">Equipo</th>
+              <th className="px-3 py-2">Solicitante</th>
+              <th className="px-3 py-2">Área</th>
+              <th className="px-3 py-2">Combustible</th>
+              <th className="px-3 py-2">Cantidad</th>
+              <th className="px-3 py-2">Fecha</th>
+              <th className="px-3 py-2">Estado</th>
+              <th className="px-3 py-2" />
+            </tr>
+          </thead>
+          <tbody>
+            {solicitudes.map((s) => (
+              <tr key={s.id} className="border-t border-zinc-100">
+                <td className="px-3 py-2 font-mono">#{s.id}</td>
+                <td className="px-3 py-2">{s.equipo.nombre}</td>
+                <td className="px-3 py-2">{s.solicitante.nombre}</td>
+                <td className="px-3 py-2">{s.area.nombre}</td>
+                <td className="px-3 py-2">{s.tipoCombustible}</td>
+                <td className="px-3 py-2">{s.cantidadSolicitada}</td>
+                <td className="px-3 py-2">
+                  {s.fechaSolicitud.toLocaleDateString("es")}
+                </td>
+                <td className="px-3 py-2">
+                  <EstadoBadge estado={s.estado} />
+                </td>
+                <td className="px-3 py-2">
+                  <Link
+                    href={`/solicitudes/${s.id}`}
+                    className="text-zinc-600 underline hover:text-zinc-900"
+                  >
+                    Ver
+                  </Link>
+                </td>
+              </tr>
+            ))}
+            {solicitudes.length === 0 && (
+              <tr>
+                <td colSpan={9} className="px-3 py-6 text-center text-zinc-400">
+                  No hay solicitudes.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

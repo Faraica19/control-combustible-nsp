@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Rol {
+  SOLICITANTE
+  BODEGA
+  ADMIN
+  CONSULTA
+}
+
+enum PerfilSolicitante {
+  CAPA
+  AYUDANTE
+  OPERADOR
+  SEGURIDAD
+}
+
+enum TipoMedidor {
+  ODOMETRO
+  HOROMETRO
+}
+
+enum TipoCombustible {
+  DIESEL
+  GASOLINA
+}
+
+enum EstadoSolicitud {
+  PENDIENTE_BODEGA
+  RECHAZADA_BODEGA
+  DESPACHADA
+}
+
+enum TipoMovimiento {
+  ENTRADA
+  SALIDA
+}
+
+model Area {
+  id        String    @id @default(cuid())
+  nombre    String    @unique
+  activo    Boolean   @default(true)
+  usuarios  User[]
+  equipos   Equipo[]
+  solicitudes Solicitud[]
+  creadoEn  DateTime  @default(now())
+}
+
+model User {
+  id                String              @id @default(cuid())
+  nombre            String
+  email             String              @unique
+  passwordHash      String
+  rol               Rol
+  perfilSolicitante PerfilSolicitante?
+  activo            Boolean             @default(true)
+  areaId            String
+  area              Area                @relation(fields: [areaId], references: [id])
+  creadoEn          DateTime            @default(now())
+
+  solicitudesCreadas    Solicitud[]           @relation("Solicitante")
+  solicitudesDespachadas Solicitud[]          @relation("Bodeguero")
+  movimientosInventario MovimientoInventario[]
+}
+
+model Equipo {
+  id              String          @id @default(cuid())
+  codigo          String          @unique
+  nombre          String
+  tipo            String
+  tipoMedidor     TipoMedidor
+  tipoCombustible TipoCombustible
+  lecturaActual   Float           @default(0)
+  activo          Boolean         @default(true)
+  areaId          String
+  area            Area            @relation(fields: [areaId], references: [id])
+  solicitudes     Solicitud[]
+  creadoEn        DateTime        @default(now())
+}
+
+model Solicitud {
+  id                     Int              @id @default(autoincrement())
+  equipoId               String
+  equipo                 Equipo           @relation(fields: [equipoId], references: [id])
+  solicitanteId          String
+  solicitante             User            @relation("Solicitante", fields: [solicitanteId], references: [id])
+  areaId                 String
+  area                   Area             @relation(fields: [areaId], references: [id])
+  tipoCombustible         TipoCombustible
+  cantidadSolicitada      Float
+  lecturaMedidor          Float
+  fechaSolicitud          DateTime        @default(now())
+  estado                  EstadoSolicitud @default(PENDIENTE_BODEGA)
+
+  bodegueroId             String?
+  bodeguero               User?           @relation("Bodeguero", fields: [bodegueroId], references: [id])
+  cantidadDespachada      Float?
+  fechaDespacho           DateTime?
+  comentarioBodega        String?
+
+  movimiento              MovimientoInventario?
+
+  @@index([estado])
+  @@index([equipoId])
+}
+
+model MovimientoInventario {
+  id              String          @id @default(cuid())
+  tipo            TipoMovimiento
+  tipoCombustible TipoCombustible
+  cantidad        Float
+  fecha           DateTime        @default(now())
+  numeroFactura   String?
+  costo           Float?
+  proveedor       String?
+  usuarioId       String
+  usuario         User            @relation(fields: [usuarioId], references: [id])
+  solicitudId     Int?            @unique
+  solicitud       Solicitud?      @relation(fields: [solicitudId], references: [id])
+
+  @@index([tipoCombustible])
+}
