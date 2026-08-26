@@ -50,14 +50,16 @@ export default async function SolicitudDetallePage({
 
       <div className="grid grid-cols-2 gap-4 rounded-lg border border-zinc-200 bg-white p-6 text-sm">
         <Campo label="Equipo" valor={`${solicitud.equipo.codigo} — ${solicitud.equipo.nombre}`} />
-        <Campo
-          label={solicitud.equipo.tipoMedidor === "ODOMETRO" ? "Odómetro" : "Horómetro"}
-          valor={String(solicitud.lecturaMedidor)}
-        />
+        {solicitud.lecturaMedidor != null && (
+          <Campo
+            label={solicitud.equipo.tipoMedidor === "ODOMETRO" ? "Odómetro" : "Horómetro"}
+            valor={String(solicitud.lecturaMedidor)}
+          />
+        )}
         <Campo label="Solicitante" valor={solicitud.solicitante.nombre} />
         <Campo label="Área" valor={solicitud.area.nombre} />
         <Campo label="Combustible" valor={solicitud.tipoCombustible} />
-        <Campo label="Cantidad solicitada" valor={String(solicitud.cantidadSolicitada)} />
+        <Campo label="Cantidad solicitada" valor={`${solicitud.cantidadSolicitada} L`} />
         <Campo
           label="Fecha de solicitud"
           valor={solicitud.fechaSolicitud.toLocaleString("es")}
@@ -68,7 +70,7 @@ export default async function SolicitudDetallePage({
         {solicitud.cantidadDespachada != null && (
           <Campo
             label="Cantidad despachada"
-            valor={String(solicitud.cantidadDespachada)}
+            valor={`${solicitud.cantidadDespachada} L`}
           />
         )}
         {solicitud.comentarioBodega && (
@@ -96,6 +98,15 @@ export default async function SolicitudDetallePage({
               min="0.01"
               defaultValue={solicitud.cantidadSolicitada}
               required
+              className="rounded border border-zinc-300 px-3 py-2 text-sm"
+            />
+            <label htmlFor="comentario-despacho" className="text-sm font-medium text-zinc-700">
+              Comentario (opcional)
+            </label>
+            <textarea
+              id="comentario-despacho"
+              name="comentario"
+              placeholder="Ej: el odómetro se dañó, nota interna, etc."
               className="rounded border border-zinc-300 px-3 py-2 text-sm"
             />
             <button

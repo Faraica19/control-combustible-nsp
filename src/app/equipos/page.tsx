@@ -6,7 +6,17 @@ export default async function EquiposPage() {
   await requireRol("ADMIN", "BODEGA");
 
   const [equipos, areas] = await Promise.all([
-    db.equipo.findMany({ include: { area: true }, orderBy: { codigo: "asc" } }),
+    db.equipo.findMany({
+      include: {
+        area: true,
+        solicitudes: {
+          where: { estado: "DESPACHADA" },
+          orderBy: { fechaDespacho: "desc" },
+          include: { solicitante: true },
+        },
+      },
+      orderBy: { codigo: "asc" },
+    }),
     db.area.findMany({ orderBy: { nombre: "asc" } }),
   ]);
 
@@ -27,16 +37,21 @@ export default async function EquiposPage() {
               <th className="px-3 py-2">Área</th>
               <th className="px-3 py-2">Estado</th>
               <th className="px-3 py-2" />
+              <th className="px-3 py-2" />
             </tr>
           </thead>
           <tbody>
             {equipos.map((e) => (
-              <tr key={e.id} className="border-t border-zinc-100">
+              <tr key={e.id} className="border-t border-zinc-100 align-top">
                 <td className="px-3 py-2 font-mono">{e.codigo}</td>
                 <td className="px-3 py-2">{e.nombre}</td>
                 <td className="px-3 py-2">{e.tipo}</td>
                 <td className="px-3 py-2">
-                  {e.tipoMedidor === "ODOMETRO" ? "Odómetro" : "Horómetro"}
+                  {e.requiereLectura
+                    ? e.tipoMedidor === "ODOMETRO"
+                      ? "Odómetro"
+                      : "Horómetro"
+                    : "No aplica"}
                 </td>
                 <td className="px-3 py-2">{e.tipoCombustible}</td>
                 <td className="px-3 py-2">{e.lecturaActual}</td>
@@ -49,11 +64,27 @@ export default async function EquiposPage() {
                     </button>
                   </form>
                 </td>
+                <td className="px-3 py-2">
+                  <details>
+                    <summary className="cursor-pointer text-zinc-600 underline hover:text-zinc-900">
+                      Ver despachos ({e.solicitudes.length})
+                    </summary>
+                    <ul className="mt-2 flex max-h-48 min-w-64 flex-col gap-1 overflow-y-auto text-xs text-zinc-600">
+                      {e.solicitudes.map((s) => (
+                        <li key={s.id}>
+                          {s.fechaDespacho?.toLocaleDateString("es")} ·{" "}
+                          {s.cantidadDespachada} L · {s.solicitante.nombre}
+                        </li>
+                      ))}
+                      {e.solicitudes.length === 0 && <li>Sin despachos aún.</li>}
+                    </ul>
+                  </details>
+                </td>
               </tr>
             ))}
             {equipos.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-zinc-400">
+                <td colSpan={10} className="px-3 py-6 text-center text-zinc-400">
                   No hay equipos registrados.
                 </td>
               </tr>
@@ -117,6 +148,18 @@ export default async function EquiposPage() {
               <option value="ODOMETRO">Odómetro</option>
               <option value="HOROMETRO">Horómetro</option>
             </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              id="requiereLectura"
+              name="requiereLectura"
+              type="checkbox"
+              defaultChecked
+              className="h-4 w-4"
+            />
+            <label htmlFor="requiereLectura" className="text-sm text-zinc-700">
+              Exigir lectura de odómetro/horómetro al solicitar combustible
+            </label>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="tipoCombustible" className="text-sm font-medium text-zinc-700">

@@ -31,7 +31,7 @@ export default async function NuevaEntradaPage() {
 
         <div className="flex flex-col gap-1">
           <label htmlFor="cantidad" className="text-sm font-medium text-zinc-700">
-            Cantidad (galones)
+            Cantidad (litros)
           </label>
           <input
             id="cantidad"
@@ -70,7 +70,7 @@ export default async function NuevaEntradaPage() {
             className="rounded border border-zinc-300 px-3 py-2 text-sm"
           />
           <p className="text-xs text-zinc-500">
-            Se usa para calcular el costo promedio por galón despachado.
+            Se usa para calcular el costo promedio por litro despachado.
           </p>
         </div>
 

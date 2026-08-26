@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
       { header: "Equipo", key: "equipo", width: 30 },
       { header: "Área", key: "area", width: 30 },
       { header: "Veces despachado", key: "veces", width: 16 },
-      { header: "Cantidad total (gal)", key: "cantidadTotal", width: 18 },
+      { header: "Cantidad total (L)", key: "cantidadTotal", width: 18 },
       { header: "Uso registrado", key: "uso", width: 16 },
-      { header: "Eficiencia (gal/unidad)", key: "eficiencia", width: 20 },
+      { header: "Eficiencia (L/unidad)", key: "eficiencia", width: 20 },
     ],
     filas.map((f) => ({
       equipo: `${f.codigo} — ${f.nombre}`,

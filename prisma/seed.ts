@@ -10,6 +10,27 @@ async function hash(password: string) {
   return bcrypt.hash(password, 10);
 }
 
+type DatosEquipo = {
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  tipoMedidor: "ODOMETRO" | "HOROMETRO";
+  tipoCombustible: "DIESEL" | "GASOLINA";
+  lecturaActual: number;
+  requiereLectura: boolean;
+  areaId: string;
+};
+
+async function upsertEquipoPorNombre(datos: DatosEquipo) {
+  const existente = await db.equipo.findFirst({
+    where: { nombre: datos.nombre },
+  });
+  if (existente) {
+    return db.equipo.update({ where: { id: existente.id }, data: datos });
+  }
+  return db.equipo.create({ data: datos });
+}
+
 async function main() {
   const areaOyM = await db.area.upsert({
     where: { nombre: "Operaciones y Mantenimiento (OyM)" },
@@ -114,150 +135,340 @@ async function main() {
     },
   });
 
-  const equipos: {
-    codigo: string;
-    nombre: string;
-    tipo: string;
-    tipoMedidor: "ODOMETRO" | "HOROMETRO";
-    tipoCombustible: "DIESEL" | "GASOLINA";
-    lecturaActual: number;
-    areaId: string;
-  }[] = [
-    // Diésel
-    {
-      codigo: "EQ-001",
-      nombre: "Camión Hino",
-      tipo: "Camión",
-      tipoMedidor: "ODOMETRO",
-      tipoCombustible: "DIESEL",
-      lecturaActual: 45000,
-      areaId: areaOyM.id,
-    },
-    {
-      codigo: "EQ-002",
-      nombre: "Cisterna",
-      tipo: "Camión cisterna",
-      tipoMedidor: "ODOMETRO",
-      tipoCombustible: "DIESEL",
-      lecturaActual: 38000,
-      areaId: areaOyM.id,
-    },
-    {
-      codigo: "EQ-003",
-      nombre: "Camioneta Isuzu",
-      tipo: "Camioneta",
-      tipoMedidor: "ODOMETRO",
-      tipoCombustible: "DIESEL",
-      lecturaActual: 62000,
-      areaId: areaOyM.id,
-    },
-    {
-      codigo: "EQ-004",
-      nombre: "Tractor MF 6712",
-      tipo: "Tractor",
-      tipoMedidor: "HOROMETRO",
-      tipoCombustible: "DIESEL",
-      lecturaActual: 1800,
-      areaId: areaOyM.id,
-    },
-    {
-      codigo: "EQ-007",
-      nombre: "Generador Kholer",
-      tipo: "Generador",
-      tipoMedidor: "HOROMETRO",
-      tipoCombustible: "DIESEL",
-      lecturaActual: 1500,
-      areaId: areaSP.id,
-    },
-    // Gasolina
-    {
-      codigo: "EQ-005",
-      nombre: "Motoguadaña",
-      tipo: "Herramienta",
-      tipoMedidor: "HOROMETRO",
-      tipoCombustible: "GASOLINA",
-      lecturaActual: 320,
-      areaId: areaSP.id,
-    },
-    {
-      codigo: "EQ-006",
-      nombre: "Generador 220",
-      tipo: "Planta eléctrica",
-      tipoMedidor: "HOROMETRO",
-      tipoCombustible: "GASOLINA",
-      lecturaActual: 2400,
-      areaId: areaSP.id,
-    },
-    {
-      codigo: "EQ-008",
-      nombre: "XWolf 300",
-      tipo: "Motocicleta",
-      tipoMedidor: "ODOMETRO",
-      tipoCombustible: "GASOLINA",
-      lecturaActual: 8000,
-      areaId: areaSS.id,
-    },
-    {
-      codigo: "EQ-009",
-      nombre: "XWolf 550",
-      tipo: "Motocicleta",
-      tipoMedidor: "ODOMETRO",
-      tipoCombustible: "GASOLINA",
-      lecturaActual: 6500,
-      areaId: areaSS.id,
-    },
-    {
-      codigo: "EQ-010",
-      nombre: "MT YBR",
-      tipo: "Motocicleta",
-      tipoMedidor: "ODOMETRO",
-      tipoCombustible: "GASOLINA",
-      lecturaActual: 12000,
-      areaId: areaSS.id,
-    },
-    {
-      codigo: "EQ-011",
-      nombre: "MT SX1",
-      tipo: "Motocicleta",
-      tipoMedidor: "ODOMETRO",
-      tipoCombustible: "GASOLINA",
-      lecturaActual: 9500,
-      areaId: areaSS.id,
-    },
-  ];
+  // Servicios de Planta (SP)
+  const camionHino = await upsertEquipoPorNombre({
+    codigo: "M-442012",
+    nombre: "Camión Hino",
+    tipo: "Camión",
+    tipoMedidor: "ODOMETRO",
+    tipoCombustible: "DIESEL",
+    lecturaActual: 45000,
+    requiereLectura: true,
+    areaId: areaSP.id,
+  });
+  const cisterna = await upsertEquipoPorNombre({
+    codigo: "LE-32484",
+    nombre: "Cisterna",
+    tipo: "Camión cisterna",
+    tipoMedidor: "ODOMETRO",
+    tipoCombustible: "DIESEL",
+    lecturaActual: 38000,
+    requiereLectura: true,
+    areaId: areaSP.id,
+  });
+  const camionetaIsuzu = await upsertEquipoPorNombre({
+    codigo: "CI-01",
+    nombre: "Camioneta Isuzu",
+    tipo: "Camioneta",
+    tipoMedidor: "ODOMETRO",
+    tipoCombustible: "DIESEL",
+    lecturaActual: 62000,
+    requiereLectura: true,
+    areaId: areaSP.id,
+  });
+  const motoguadana = await upsertEquipoPorNombre({
+    codigo: "MTGÑ",
+    nombre: "Motoguadaña",
+    tipo: "Herramienta",
+    tipoMedidor: "HOROMETRO",
+    tipoCombustible: "GASOLINA",
+    lecturaActual: 320,
+    requiereLectura: false,
+    areaId: areaSP.id,
+  });
+  const tractor = await upsertEquipoPorNombre({
+    codigo: "T-001",
+    nombre: "Tractor MF 6712",
+    tipo: "Tractor",
+    tipoMedidor: "HOROMETRO",
+    tipoCombustible: "DIESEL",
+    lecturaActual: 1800,
+    requiereLectura: true,
+    areaId: areaSP.id,
+  });
+  const generador220 = await upsertEquipoPorNombre({
+    codigo: "GE-220",
+    nombre: "Generador 220",
+    tipo: "Planta eléctrica",
+    tipoMedidor: "HOROMETRO",
+    tipoCombustible: "GASOLINA",
+    lecturaActual: 2400,
+    requiereLectura: true,
+    areaId: areaSP.id,
+  });
 
-  for (const equipo of equipos) {
-    await db.equipo.upsert({
-      where: { codigo: equipo.codigo },
-      update: {},
-      create: equipo,
+  // Operaciones y Mantenimiento (OyM)
+  const xwolf550 = await upsertEquipoPorNombre({
+    codigo: "CC-001",
+    nombre: "XWolf 550",
+    tipo: "Cuadraciclo",
+    tipoMedidor: "ODOMETRO",
+    tipoCombustible: "GASOLINA",
+    lecturaActual: 6500,
+    requiereLectura: true,
+    areaId: areaOyM.id,
+  });
+  const xwolf300 = await upsertEquipoPorNombre({
+    codigo: "CC-002",
+    nombre: "XWolf 300",
+    tipo: "Cuadraciclo",
+    tipoMedidor: "ODOMETRO",
+    tipoCombustible: "GASOLINA",
+    lecturaActual: 8000,
+    requiereLectura: true,
+    areaId: areaOyM.id,
+  });
+  const generadorKholer = await upsertEquipoPorNombre({
+    codigo: "GE-KOH",
+    nombre: "Generador Kholer",
+    tipo: "Generador",
+    tipoMedidor: "HOROMETRO",
+    tipoCombustible: "DIESEL",
+    lecturaActual: 1500,
+    requiereLectura: true,
+    areaId: areaOyM.id,
+  });
+
+  // Supervisión y Seguridad (SS)
+  const ybr = await upsertEquipoPorNombre({
+    codigo: "M-298786",
+    nombre: "MT YBR",
+    tipo: "Motocicleta",
+    tipoMedidor: "ODOMETRO",
+    tipoCombustible: "GASOLINA",
+    lecturaActual: 12000,
+    requiereLectura: true,
+    areaId: areaSS.id,
+  });
+  const sx1 = await upsertEquipoPorNombre({
+    codigo: "MT-02",
+    nombre: "MT SX1",
+    tipo: "Motocicleta",
+    tipoMedidor: "ODOMETRO",
+    tipoCombustible: "GASOLINA",
+    lecturaActual: 9500,
+    requiereLectura: true,
+    areaId: areaSS.id,
+  });
+
+  // --- Carga única de datos históricos reales (facturas y despachos ya ocurridos) ---
+  const yaImportado = await db.movimientoInventario.findFirst({
+    where: { numeroFactura: "254022" },
+  });
+
+  if (!yaImportado) {
+    // Elimina los movimientos de demostración de la primera versión, si existen.
+    await db.movimientoInventario.deleteMany({
+      where: { numeroFactura: { in: ["FAC-0001", "FAC-0002"] } },
     });
-  }
 
-  const inventarioExistente = await db.movimientoInventario.count();
-  if (inventarioExistente === 0) {
+    await db.movimientoInventario.create({
+      data: {
+        tipo: "ENTRADA",
+        tipoCombustible: "GASOLINA",
+        cantidad: 71.136,
+        costo: 3438,
+        numeroFactura: "254022",
+        proveedor: "Agroservicios Nagarote",
+        usuarioId: bodega.id,
+        fecha: new Date("2026-08-19T12:00:00"),
+      },
+    });
     await db.movimientoInventario.create({
       data: {
         tipo: "ENTRADA",
         tipoCombustible: "DIESEL",
-        cantidad: 1000,
-        costo: 55000,
-        numeroFactura: "FAC-0001",
-        proveedor: "Distribuidora de Combustibles S.A.",
+        cantidad: 46.587,
+        costo: 2010.09,
+        numeroFactura: "55123",
+        proveedor: "Puma San Sebastián",
         usuarioId: bodega.id,
+        fecha: new Date("2026-08-19T12:05:00"),
+      },
+    });
+    await db.movimientoInventario.create({
+      data: {
+        tipo: "ENTRADA",
+        tipoCombustible: "DIESEL",
+        cantidad: 57.37,
+        costo: 2510,
+        numeroFactura: "254189",
+        usuarioId: bodega.id,
+        fecha: new Date("2026-08-24T12:00:00"),
       },
     });
     await db.movimientoInventario.create({
       data: {
         tipo: "ENTRADA",
         tipoCombustible: "GASOLINA",
-        cantidad: 400,
-        costo: 24000,
-        numeroFactura: "FAC-0002",
-        proveedor: "Distribuidora de Combustibles S.A.",
+        cantidad: 53.804,
+        costo: 2600.35,
+        numeroFactura: "254189",
         usuarioId: bodega.id,
+        fecha: new Date("2026-08-24T12:05:00"),
       },
     });
+
+    type SalidaHistorica = {
+      equipoId: string;
+      areaId: string;
+      tipoCombustible: "DIESEL" | "GASOLINA";
+      cantidad: number;
+      lecturaMedidor: number | null;
+      solicitanteId: string;
+      bodegueroId: string;
+      fecha: Date;
+      comentarioBodega?: string;
+    };
+
+    const salidas: SalidaHistorica[] = [
+      {
+        equipoId: xwolf300.id,
+        areaId: areaOyM.id,
+        tipoCombustible: "GASOLINA",
+        cantidad: 14,
+        lecturaMedidor: 3370,
+        solicitanteId: solicitanteOyM.id,
+        bodegueroId: bodega.id,
+        fecha: new Date("2026-08-19T09:00:00"),
+      },
+      {
+        equipoId: sx1.id,
+        areaId: areaSS.id,
+        tipoCombustible: "GASOLINA",
+        cantidad: 11,
+        lecturaMedidor: 15159.7,
+        solicitanteId: solicitanteSS.id,
+        bodegueroId: bodega.id,
+        fecha: new Date("2026-08-19T09:15:00"),
+      },
+      {
+        equipoId: motoguadana.id,
+        areaId: areaSP.id,
+        tipoCombustible: "GASOLINA",
+        cantidad: 4,
+        lecturaMedidor: null,
+        solicitanteId: bodega.id,
+        bodegueroId: bodega.id,
+        fecha: new Date("2026-08-19T09:30:00"),
+      },
+      {
+        equipoId: xwolf550.id,
+        areaId: areaOyM.id,
+        tipoCombustible: "GASOLINA",
+        cantidad: 22,
+        lecturaMedidor: 5846,
+        solicitanteId: solicitanteOyM.id,
+        bodegueroId: bodega.id,
+        fecha: new Date("2026-08-20T09:00:00"),
+      },
+      {
+        equipoId: camionHino.id,
+        areaId: areaSP.id,
+        tipoCombustible: "DIESEL",
+        cantidad: 46.58,
+        lecturaMedidor: 35501,
+        solicitanteId: admin.id,
+        bodegueroId: admin.id,
+        fecha: new Date("2026-08-20T09:15:00"),
+      },
+      {
+        equipoId: ybr.id,
+        areaId: areaSS.id,
+        tipoCombustible: "GASOLINA",
+        cantidad: 11,
+        lecturaMedidor: 2130.6,
+        solicitanteId: solicitanteSS.id,
+        bodegueroId: bodega.id,
+        fecha: new Date("2026-08-21T09:00:00"),
+      },
+      {
+        equipoId: xwolf300.id,
+        areaId: areaOyM.id,
+        tipoCombustible: "GASOLINA",
+        cantidad: 14,
+        lecturaMedidor: 3478,
+        solicitanteId: solicitanteOyM.id,
+        bodegueroId: bodega.id,
+        fecha: new Date("2026-08-21T09:15:00"),
+      },
+      {
+        equipoId: motoguadana.id,
+        areaId: areaSP.id,
+        tipoCombustible: "GASOLINA",
+        cantidad: 4,
+        lecturaMedidor: null,
+        solicitanteId: bodega.id,
+        bodegueroId: bodega.id,
+        fecha: new Date("2026-08-24T09:00:00"),
+      },
+      {
+        equipoId: xwolf300.id,
+        areaId: areaOyM.id,
+        tipoCombustible: "GASOLINA",
+        cantidad: 14,
+        lecturaMedidor: 3563,
+        solicitanteId: solicitanteOyM.id,
+        bodegueroId: bodega.id,
+        fecha: new Date("2026-08-24T09:15:00"),
+      },
+      {
+        equipoId: sx1.id,
+        areaId: areaSS.id,
+        tipoCombustible: "GASOLINA",
+        cantidad: 11,
+        lecturaMedidor: 5390,
+        solicitanteId: solicitanteSS.id,
+        bodegueroId: bodega.id,
+        fecha: new Date("2026-08-24T09:30:00"),
+        comentarioBodega: "El odómetro se dañó el 23 de agosto.",
+      },
+      {
+        equipoId: camionHino.id,
+        areaId: areaSP.id,
+        tipoCombustible: "DIESEL",
+        cantidad: 57.37,
+        lecturaMedidor: 35951,
+        solicitanteId: admin.id,
+        bodegueroId: admin.id,
+        fecha: new Date("2026-08-24T09:45:00"),
+      },
+    ];
+
+    for (const s of salidas) {
+      const solicitud = await db.solicitud.create({
+        data: {
+          equipoId: s.equipoId,
+          solicitanteId: s.solicitanteId,
+          areaId: s.areaId,
+          tipoCombustible: s.tipoCombustible,
+          cantidadSolicitada: s.cantidad,
+          lecturaMedidor: s.lecturaMedidor,
+          fechaSolicitud: s.fecha,
+          estado: "DESPACHADA",
+          cantidadDespachada: s.cantidad,
+          fechaDespacho: s.fecha,
+          bodegueroId: s.bodegueroId,
+          comentarioBodega: s.comentarioBodega,
+        },
+      });
+      await db.movimientoInventario.create({
+        data: {
+          tipo: "SALIDA",
+          tipoCombustible: s.tipoCombustible,
+          cantidad: s.cantidad,
+          usuarioId: s.bodegueroId,
+          solicitudId: solicitud.id,
+          fecha: s.fecha,
+        },
+      });
+      if (s.lecturaMedidor != null) {
+        await db.equipo.update({
+          where: { id: s.equipoId },
+          data: { lecturaActual: s.lecturaMedidor },
+        });
+      }
+    }
   }
 
   console.log("Seed completado.");
@@ -269,7 +480,6 @@ async function main() {
     solicitanteSP: solicitanteSP.email,
     consultaWalkiria: consultaWalkiria.email,
     consultaMiguel: consultaMiguel.email,
-    equipos: equipos.map((e) => `${e.codigo} (${e.tipoCombustible})`).join(", "),
   });
 }
 

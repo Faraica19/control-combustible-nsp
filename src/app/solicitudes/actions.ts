@@ -11,19 +11,24 @@ export async function crearSolicitud(formData: FormData) {
 
   const equipoId = String(formData.get("equipoId") ?? "");
   const cantidadSolicitada = Number(formData.get("cantidadSolicitada"));
-  const lecturaMedidor = Number(formData.get("lecturaMedidor"));
+  const lecturaMedidorRaw = String(formData.get("lecturaMedidor") ?? "").trim();
+  const lecturaMedidor = lecturaMedidorRaw ? Number(lecturaMedidorRaw) : null;
 
-  if (
-    !equipoId ||
-    !(cantidadSolicitada > 0) ||
-    Number.isNaN(lecturaMedidor) ||
-    lecturaMedidor < 0
-  ) {
+  if (!equipoId || !(cantidadSolicitada > 0)) {
     throw new Error("Datos de la solicitud inválidos.");
+  }
+  if (
+    lecturaMedidor != null &&
+    (Number.isNaN(lecturaMedidor) || lecturaMedidor < 0)
+  ) {
+    throw new Error("Lectura de odómetro/horómetro inválida.");
   }
 
   const equipo = await db.equipo.findUnique({ where: { id: equipoId } });
   if (!equipo || !equipo.activo) throw new Error("Equipo no válido.");
+  if (equipo.requiereLectura && lecturaMedidor == null) {
+    throw new Error("Este equipo requiere la lectura de odómetro/horómetro.");
+  }
 
   await db.solicitud.create({
     data: {
@@ -50,6 +55,7 @@ export async function despacharBodega(id: number, formData: FormData) {
   const session = await requireRol("BODEGA", "ADMIN");
   const solicitud = await cargarSolicitud(id);
   const cantidadDespachada = Number(formData.get("cantidadDespachada"));
+  const comentario = String(formData.get("comentario") ?? "").trim();
 
   if (solicitud.estado !== "PENDIENTE_BODEGA") {
     throw new Error("La solicitud ya no está pendiente de despacho.");
@@ -61,7 +67,7 @@ export async function despacharBodega(id: number, formData: FormData) {
   const saldo = await getSaldo(solicitud.tipoCombustible);
   if (cantidadDespachada > saldo) {
     throw new Error(
-      `Stock insuficiente. Saldo disponible: ${saldo} de ${solicitud.tipoCombustible}.`,
+      `Stock insuficiente. Inventario disponible: ${saldo} L de ${solicitud.tipoCombustible}.`,
     );
   }
 
@@ -73,6 +79,7 @@ export async function despacharBodega(id: number, formData: FormData) {
         cantidadDespachada,
         fechaDespacho: new Date(),
         bodegueroId: session.user.id,
+        comentarioBodega: comentario || null,
       },
     }),
     db.movimientoInventario.create({
@@ -84,10 +91,14 @@ export async function despacharBodega(id: number, formData: FormData) {
         solicitudId: id,
       },
     }),
-    db.equipo.update({
-      where: { id: solicitud.equipoId },
-      data: { lecturaActual: solicitud.lecturaMedidor },
-    }),
+    ...(solicitud.lecturaMedidor != null
+      ? [
+          db.equipo.update({
+            where: { id: solicitud.equipoId },
+            data: { lecturaActual: solicitud.lecturaMedidor },
+          }),
+        ]
+      : []),
   ]);
 
   revalidatePath(`/solicitudes/${id}`);

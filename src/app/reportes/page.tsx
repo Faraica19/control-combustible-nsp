@@ -90,7 +90,7 @@ export default async function ReportesPage({
                 </td>
                 <td className="px-3 py-2">{f.areaNombre}</td>
                 <td className="px-3 py-2">{f.veces}</td>
-                <td className="px-3 py-2">{f.cantidadTotal.toFixed(2)}</td>
+                <td className="px-3 py-2">{f.cantidadTotal.toFixed(2)} L</td>
                 <td className="px-3 py-2">
                   {f.deltaLectura != null
                     ? `${f.deltaLectura.toFixed(2)} ${
@@ -100,7 +100,7 @@ export default async function ReportesPage({
                 </td>
                 <td className="px-3 py-2">
                   {f.eficiencia != null
-                    ? `${f.eficiencia.toFixed(3)} gal/unidad`
+                    ? `${f.eficiencia.toFixed(3)} L/unidad`
                     : "N/D"}
                 </td>
               </tr>

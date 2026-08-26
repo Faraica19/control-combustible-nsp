@@ -18,6 +18,7 @@ export async function crearEquipo(formData: FormData) {
   ) as TipoCombustible;
   const lecturaActual = Number(formData.get("lecturaActual"));
   const areaId = String(formData.get("areaId") ?? "");
+  const requiereLectura = formData.get("requiereLectura") === "on";
 
   if (!codigo || !nombre || !tipo || !areaId) {
     throw new Error("Todos los campos son obligatorios.");
@@ -33,7 +34,16 @@ export async function crearEquipo(formData: FormData) {
   }
 
   await db.equipo.create({
-    data: { codigo, nombre, tipo, tipoMedidor, tipoCombustible, lecturaActual, areaId },
+    data: {
+      codigo,
+      nombre,
+      tipo,
+      tipoMedidor,
+      tipoCombustible,
+      lecturaActual,
+      areaId,
+      requiereLectura,
+    },
   });
 
   revalidatePath("/equipos");

@@ -43,7 +43,7 @@ export async function getEficienciaPorEquipo(
       veces: 0,
     };
     actual.cantidadTotal += s.cantidadDespachada ?? 0;
-    actual.lecturas.push(s.lecturaMedidor);
+    if (s.lecturaMedidor != null) actual.lecturas.push(s.lecturaMedidor);
     actual.veces += 1;
     porEquipo.set(s.equipoId, actual);
   }

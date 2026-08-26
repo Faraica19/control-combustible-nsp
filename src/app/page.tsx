@@ -13,8 +13,8 @@ export default async function DashboardPage() {
       <div className="flex flex-col gap-4">
         <h1 className="text-lg font-semibold text-zinc-900">Hola, {name}</h1>
         <div className="grid grid-cols-2 gap-4">
-          <Tarjeta titulo="Saldo diésel" valor={`${saldos.DIESEL} gal`} />
-          <Tarjeta titulo="Saldo gasolina" valor={`${saldos.GASOLINA} gal`} />
+          <Tarjeta titulo="Inventario diésel" valor={`${saldos.DIESEL} L`} />
+          <Tarjeta titulo="Inventario gasolina" valor={`${saldos.GASOLINA} L`} />
         </div>
         <Link
           href="/inventario"
@@ -54,8 +54,8 @@ export default async function DashboardPage() {
         <h1 className="text-lg font-semibold text-zinc-900">Hola, {name}</h1>
         <div className="grid grid-cols-3 gap-4">
           <Tarjeta titulo="Pendientes de despacho" valor={pendientes} />
-          <Tarjeta titulo="Saldo diésel" valor={`${saldos.DIESEL} gal`} />
-          <Tarjeta titulo="Saldo gasolina" valor={`${saldos.GASOLINA} gal`} />
+          <Tarjeta titulo="Inventario diésel" valor={`${saldos.DIESEL} L`} />
+          <Tarjeta titulo="Inventario gasolina" valor={`${saldos.GASOLINA} L`} />
         </div>
         <Link
           href="/solicitudes/nueva"
@@ -80,8 +80,8 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Tarjeta titulo="Pendientes de despacho" valor={pendBodega} />
         <Tarjeta titulo="Despachadas (total)" valor={despachadas} />
-        <Tarjeta titulo="Saldo diésel" valor={`${saldos.DIESEL} gal`} />
-        <Tarjeta titulo="Saldo gasolina" valor={`${saldos.GASOLINA} gal`} />
+        <Tarjeta titulo="Inventario diésel" valor={`${saldos.DIESEL} L`} />
+        <Tarjeta titulo="Inventario gasolina" valor={`${saldos.GASOLINA} L`} />
       </div>
       <div className="flex gap-4">
         <Link

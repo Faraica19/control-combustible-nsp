@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { crearSolicitud } from "../actions";
 
 type Equipo = {
@@ -10,6 +10,7 @@ type Equipo = {
   tipoMedidor: "ODOMETRO" | "HOROMETRO";
   tipoCombustible: "DIESEL" | "GASOLINA";
   lecturaActual: number;
+  requiereLectura: boolean;
   area: { nombre: string };
 };
 
@@ -22,6 +23,18 @@ export default function NuevaSolicitudForm({ equipos }: { equipos: Equipo[] }) {
     () => equipos.filter((e) => e.tipoCombustible === tipoCombustible),
     [equipos, tipoCombustible],
   );
+
+  const [equipoId, setEquipoId] = useState(equiposFiltrados[0]?.id ?? "");
+
+  useEffect(() => {
+    if (!equiposFiltrados.some((e) => e.id === equipoId)) {
+      setEquipoId(equiposFiltrados[0]?.id ?? "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [equiposFiltrados]);
+
+  const equipoSeleccionado = equiposFiltrados.find((e) => e.id === equipoId);
+  const requiereLectura = equipoSeleccionado?.requiereLectura ?? true;
 
   return (
     <form
@@ -60,6 +73,8 @@ export default function NuevaSolicitudForm({ equipos }: { equipos: Equipo[] }) {
             id="equipoId"
             name="equipoId"
             required
+            value={equipoId}
+            onChange={(e) => setEquipoId(e.target.value)}
             className="rounded border border-zinc-300 px-3 py-2 text-sm"
           >
             {equiposFiltrados.map((e) => (
@@ -73,27 +88,29 @@ export default function NuevaSolicitudForm({ equipos }: { equipos: Equipo[] }) {
         )}
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="lecturaMedidor" className="text-sm font-medium text-zinc-700">
-          Lectura actual de odómetro/horómetro
-        </label>
-        <input
-          id="lecturaMedidor"
-          name="lecturaMedidor"
-          type="number"
-          step="0.01"
-          min="0"
-          required
-          className="rounded border border-zinc-300 px-3 py-2 text-sm"
-        />
-      </div>
+      {requiereLectura && (
+        <div className="flex flex-col gap-1">
+          <label htmlFor="lecturaMedidor" className="text-sm font-medium text-zinc-700">
+            Lectura actual de odómetro/horómetro
+          </label>
+          <input
+            id="lecturaMedidor"
+            name="lecturaMedidor"
+            type="number"
+            step="0.01"
+            min="0"
+            required
+            className="rounded border border-zinc-300 px-3 py-2 text-sm"
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-1">
         <label
           htmlFor="cantidadSolicitada"
           className="text-sm font-medium text-zinc-700"
         >
-          Cantidad solicitada (galones)
+          Cantidad solicitada (litros)
         </label>
         <input
           id="cantidadSolicitada"

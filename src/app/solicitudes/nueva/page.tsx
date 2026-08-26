@@ -15,6 +15,7 @@ export default async function NuevaSolicitudPage() {
       tipoMedidor: true,
       tipoCombustible: true,
       lecturaActual: true,
+      requiereLectura: true,
       area: { select: { nombre: true } },
     },
   });
