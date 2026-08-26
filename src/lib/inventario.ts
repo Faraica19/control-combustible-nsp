@@ -13,6 +13,9 @@ export async function getSaldos(): Promise<Record<TipoCombustible, number>> {
     const signo = m.tipo === "ENTRADA" ? 1 : -1;
     saldos[m.tipoCombustible] += signo * cantidad;
   }
+  for (const tipo of Object.keys(saldos)) {
+    saldos[tipo] = Math.round(saldos[tipo] * 1000) / 1000;
+  }
   return saldos as Record<TipoCombustible, number>;
 }
 
