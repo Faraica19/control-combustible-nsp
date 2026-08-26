@@ -471,6 +471,35 @@ async function main() {
     }
   }
 
+  // --- Inventario inicial: combustible que ya existía antes de usar el sistema ---
+  const inventarioInicialYaCargado = await db.movimientoInventario.findFirst({
+    where: { numeroFactura: "INV-INICIAL-DIESEL" },
+  });
+  if (!inventarioInicialYaCargado) {
+    await db.movimientoInventario.create({
+      data: {
+        tipo: "ENTRADA",
+        tipoCombustible: "GASOLINA",
+        cantidad: 61.06,
+        numeroFactura: "INV-INICIAL-GASOLINA",
+        proveedor: "Inventario inicial (existencia previa al sistema)",
+        usuarioId: bodega.id,
+        fecha: new Date("2026-08-19T08:00:00"),
+      },
+    });
+    await db.movimientoInventario.create({
+      data: {
+        tipo: "ENTRADA",
+        tipoCombustible: "DIESEL",
+        cantidad: 80,
+        numeroFactura: "INV-INICIAL-DIESEL",
+        proveedor: "Inventario inicial (existencia previa al sistema)",
+        usuarioId: bodega.id,
+        fecha: new Date("2026-08-19T08:00:00"),
+      },
+    });
+  }
+
   console.log("Seed completado.");
   console.log({
     admin: admin.email,
