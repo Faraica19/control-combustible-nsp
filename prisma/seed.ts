@@ -500,6 +500,15 @@ async function main() {
     });
   }
 
+  // --- Correcciones puntuales pedidas por el usuario ---
+  await db.movimientoInventario.deleteMany({
+    where: { numeroFactura: "N5550" },
+  });
+  await db.movimientoInventario.updateMany({
+    where: { numeroFactura: "254189", proveedor: null },
+    data: { proveedor: "Agroservicios Nagarote" },
+  });
+
   console.log("Seed completado.");
   console.log({
     admin: admin.email,

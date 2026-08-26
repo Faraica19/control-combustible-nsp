@@ -43,3 +43,16 @@ export async function registrarEntrada(formData: FormData) {
   revalidatePath("/inventario");
   redirect("/inventario");
 }
+
+export async function eliminarEntrada(id: string) {
+  await requireRol("ADMIN");
+
+  const movimiento = await db.movimientoInventario.findUnique({ where: { id } });
+  if (!movimiento) throw new Error("Movimiento no encontrado.");
+  if (movimiento.tipo !== "ENTRADA") {
+    throw new Error("Solo se pueden eliminar entradas, no despachos.");
+  }
+
+  await db.movimientoInventario.delete({ where: { id } });
+  revalidatePath("/inventario");
+}

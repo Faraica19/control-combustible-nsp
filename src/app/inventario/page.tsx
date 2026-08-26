@@ -2,10 +2,12 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireRol } from "@/lib/permisos";
 import { getSaldos, getCostoPromedio } from "@/lib/inventario";
+import { eliminarEntrada } from "./actions";
 
 export default async function InventarioPage() {
   const session = await requireRol("BODEGA", "ADMIN", "CONSULTA");
   const puedeRegistrar = session.user.rol === "BODEGA" || session.user.rol === "ADMIN";
+  const esAdmin = session.user.rol === "ADMIN";
 
   const [saldos, costoPromedio] = await Promise.all([
     getSaldos(),
@@ -85,6 +87,7 @@ export default async function InventarioPage() {
               <th className="px-3 py-2">Costo</th>
               <th className="px-3 py-2">Proveedor</th>
               <th className="px-3 py-2">Registrado por</th>
+              {esAdmin && <th className="px-3 py-2" />}
             </tr>
           </thead>
           <tbody>
@@ -99,11 +102,20 @@ export default async function InventarioPage() {
                 </td>
                 <td className="px-3 py-2">{m.proveedor ?? "—"}</td>
                 <td className="px-3 py-2">{m.usuario.nombre}</td>
+                {esAdmin && (
+                  <td className="px-3 py-2">
+                    <form action={eliminarEntrada.bind(null, m.id)}>
+                      <button className="text-red-600 underline hover:text-red-800">
+                        Eliminar
+                      </button>
+                    </form>
+                  </td>
+                )}
               </tr>
             ))}
             {entradas.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-zinc-400">
+                <td colSpan={8} className="px-3 py-6 text-center text-zinc-400">
                   Sin entradas registradas.
                 </td>
               </tr>
