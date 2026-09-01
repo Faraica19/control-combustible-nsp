@@ -17,6 +17,7 @@ export default async function Nav() {
   const links: { href: string; label: string }[] = [
     { href: "/", label: "Inicio" },
     { href: "/solicitudes", label: "Solicitudes" },
+    { href: "/mantenimiento", label: "Mantenimiento" },
   ];
 
   if (rol === "BODEGA" || rol === "ADMIN" || rol === "CONSULTA") {

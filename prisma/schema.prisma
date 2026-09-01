@@ -42,6 +42,23 @@ enum TipoMovimiento {
   SALIDA
 }
 
+enum TipoTrabajo {
+  MANTENIMIENTO
+  REPARACION_LLANTA
+}
+
+enum MaterialLlanta {
+  PARCHE
+  MECHA
+  NEUMATICO
+}
+
+enum EstadoTrabajo {
+  PENDIENTE
+  RECHAZADA
+  COMPLETADA
+}
+
 model Area {
   id        String    @id @default(cuid())
   nombre    String    @unique
@@ -49,6 +66,7 @@ model Area {
   usuarios  User[]
   equipos   Equipo[]
   solicitudes Solicitud[]
+  solicitudesTrabajo SolicitudTrabajo[]
   creadoEn  DateTime  @default(now())
 }
 
@@ -67,6 +85,9 @@ model User {
   solicitudesCreadas    Solicitud[]           @relation("Solicitante")
   solicitudesDespachadas Solicitud[]          @relation("Bodeguero")
   movimientosInventario MovimientoInventario[]
+
+  solicitudesTrabajoCreadas  SolicitudTrabajo[] @relation("SolicitanteTrabajo")
+  solicitudesTrabajoResueltas SolicitudTrabajo[] @relation("BodegueroTrabajo")
 }
 
 model Equipo {
@@ -82,6 +103,7 @@ model Equipo {
   areaId          String
   area            Area            @relation(fields: [areaId], references: [id])
   solicitudes     Solicitud[]
+  solicitudesTrabajo SolicitudTrabajo[]
   creadoEn        DateTime        @default(now())
 }
 
@@ -106,6 +128,31 @@ model Solicitud {
   comentarioBodega        String?
 
   movimiento              MovimientoInventario?
+
+  @@index([estado])
+  @@index([equipoId])
+}
+
+model SolicitudTrabajo {
+  id               Int             @id @default(autoincrement())
+  tipo             TipoTrabajo
+  equipoId         String
+  equipo           Equipo          @relation(fields: [equipoId], references: [id])
+  solicitanteId    String
+  solicitante      User            @relation("SolicitanteTrabajo", fields: [solicitanteId], references: [id])
+  areaId           String
+  area             Area            @relation(fields: [areaId], references: [id])
+  esPonchadura     Boolean         @default(false)
+  descripcion      String?
+  fechaSolicitud   DateTime        @default(now())
+  estado           EstadoTrabajo   @default(PENDIENTE)
+
+  bodegueroId      String?
+  bodeguero        User?           @relation("BodegueroTrabajo", fields: [bodegueroId], references: [id])
+  materialesUsados MaterialLlanta[]
+  horasTrabajo     Float?
+  comentario       String?
+  fechaResolucion  DateTime?
 
   @@index([estado])
   @@index([equipoId])
