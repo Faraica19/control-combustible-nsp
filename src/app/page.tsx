@@ -94,7 +94,7 @@ export default async function DashboardPage() {
           href="/reportes"
           className="w-fit self-center text-sm text-zinc-600 underline hover:text-zinc-900"
         >
-          Ver reporte de eficiencia
+          Ver reporte de rendimiento
         </Link>
       </div>
     </div>

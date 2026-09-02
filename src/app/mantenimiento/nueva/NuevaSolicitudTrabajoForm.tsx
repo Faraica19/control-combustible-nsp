@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { crearSolicitudTrabajo } from "../actions";
 
 type Equipo = {
   id: string;
   codigo: string;
   nombre: string;
+  tipoMedidor: "ODOMETRO" | "HOROMETRO";
+  lecturaActual: number;
+  requiereLectura: boolean;
   area: { nombre: string };
 };
 
@@ -17,6 +20,12 @@ export default function NuevaSolicitudTrabajoForm({
 }) {
   const [tipo, setTipo] = useState<"MANTENIMIENTO" | "REPARACION_LLANTA">(
     "MANTENIMIENTO",
+  );
+  const [equipoId, setEquipoId] = useState(equipos[0]?.id ?? "");
+
+  const equipoSeleccionado = useMemo(
+    () => equipos.find((e) => e.id === equipoId),
+    [equipos, equipoId],
   );
 
   return (
@@ -50,6 +59,8 @@ export default function NuevaSolicitudTrabajoForm({
           id="equipoId"
           name="equipoId"
           required
+          value={equipoId}
+          onChange={(e) => setEquipoId(e.target.value)}
           className="rounded border border-zinc-300 px-3 py-2 text-sm"
         >
           {equipos.map((e) => (
@@ -59,6 +70,27 @@ export default function NuevaSolicitudTrabajoForm({
           ))}
         </select>
       </div>
+
+      {equipoSeleccionado?.requiereLectura && (
+        <div className="flex flex-col gap-1">
+          <label htmlFor="lecturaMedidor" className="text-sm font-medium text-zinc-700">
+            {equipoSeleccionado.tipoMedidor === "ODOMETRO" ? "Odómetro" : "Horómetro"}{" "}
+            actual (última registrada: {equipoSeleccionado.lecturaActual})
+          </label>
+          <input
+            id="lecturaMedidor"
+            name="lecturaMedidor"
+            type="number"
+            step="0.01"
+            min={equipoSeleccionado.lecturaActual}
+            required
+            className="rounded border border-zinc-300 px-3 py-2 text-sm"
+          />
+          <p className="text-xs text-zinc-500">
+            Debe ser mayor a {equipoSeleccionado.lecturaActual}.
+          </p>
+        </div>
+      )}
 
       {tipo === "REPARACION_LLANTA" && (
         <div className="flex items-center gap-2">

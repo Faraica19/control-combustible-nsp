@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Nav from "@/components/Nav";
 import "./globals.css";
@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Control de Combustible NSP",
   description: "Control de despacho e inventario de combustible — NSP Sun Power S.A.",
+};
+
+export const viewport: Viewport = {
+  colorScheme: "light",
+  themeColor: "#ea580c",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

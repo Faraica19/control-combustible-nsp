@@ -143,6 +143,7 @@ model SolicitudTrabajo {
   areaId           String
   area             Area            @relation(fields: [areaId], references: [id])
   esPonchadura     Boolean         @default(false)
+  lecturaMedidor   Float?
   descripcion      String?
   fechaSolicitud   DateTime        @default(now())
   estado           EstadoTrabajo   @default(PENDIENTE)

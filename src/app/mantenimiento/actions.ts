@@ -13,6 +13,8 @@ export async function crearSolicitudTrabajo(formData: FormData) {
   const equipoId = String(formData.get("equipoId") ?? "");
   const esPonchadura = formData.get("esPonchadura") === "on";
   const descripcion = String(formData.get("descripcion") ?? "").trim();
+  const lecturaMedidorRaw = String(formData.get("lecturaMedidor") ?? "").trim();
+  const lecturaMedidor = lecturaMedidorRaw ? Number(lecturaMedidorRaw) : null;
 
   if (!["MANTENIMIENTO", "REPARACION_LLANTA"].includes(tipo) || !equipoId) {
     throw new Error("Datos de la solicitud inválidos.");
@@ -21,6 +23,17 @@ export async function crearSolicitudTrabajo(formData: FormData) {
   const equipo = await db.equipo.findUnique({ where: { id: equipoId } });
   if (!equipo || !equipo.activo) throw new Error("Equipo no válido.");
 
+  if (equipo.requiereLectura) {
+    if (lecturaMedidor == null || Number.isNaN(lecturaMedidor)) {
+      throw new Error("Este equipo requiere la lectura de odómetro/horómetro.");
+    }
+    if (lecturaMedidor <= equipo.lecturaActual) {
+      throw new Error(
+        `La lectura debe ser mayor a la última registrada (${equipo.lecturaActual}).`,
+      );
+    }
+  }
+
   await db.solicitudTrabajo.create({
     data: {
       tipo,
@@ -28,6 +41,7 @@ export async function crearSolicitudTrabajo(formData: FormData) {
       solicitanteId: session.user.id,
       areaId: session.user.areaId,
       esPonchadura: tipo === "REPARACION_LLANTA" ? esPonchadura : false,
+      lecturaMedidor: equipo.requiereLectura ? lecturaMedidor : null,
       descripcion: descripcion || null,
     },
   });
@@ -73,9 +87,48 @@ export async function aprobarYCompletarTrabajo(id: number, formData: FormData) {
     },
   });
 
+  if (solicitud.lecturaMedidor != null) {
+    const equipo = await db.equipo.findUnique({ where: { id: solicitud.equipoId } });
+    if (equipo && solicitud.lecturaMedidor > equipo.lecturaActual) {
+      await db.equipo.update({
+        where: { id: solicitud.equipoId },
+        data: { lecturaActual: solicitud.lecturaMedidor },
+      });
+    }
+  }
+
   revalidatePath(`/mantenimiento/${id}`);
   revalidatePath("/mantenimiento");
+  revalidatePath("/equipos");
   redirect(`/mantenimiento/${id}`);
+}
+
+export async function editarLecturaTrabajo(id: number, formData: FormData) {
+  await requireRol("ADMIN");
+  const solicitud = await cargarSolicitudTrabajo(id);
+
+  const nuevaLecturaRaw = String(formData.get("lecturaMedidor") ?? "").trim();
+  const nuevaLectura = nuevaLecturaRaw ? Number(nuevaLecturaRaw) : null;
+
+  if (nuevaLectura == null || Number.isNaN(nuevaLectura) || nuevaLectura < 0) {
+    throw new Error("Lectura inválida.");
+  }
+
+  await db.solicitudTrabajo.update({
+    where: { id },
+    data: { lecturaMedidor: nuevaLectura },
+  });
+
+  const equipo = await db.equipo.findUnique({ where: { id: solicitud.equipoId } });
+  if (equipo && nuevaLectura > equipo.lecturaActual) {
+    await db.equipo.update({
+      where: { id: solicitud.equipoId },
+      data: { lecturaActual: nuevaLectura },
+    });
+  }
+
+  revalidatePath(`/mantenimiento/${id}`);
+  revalidatePath("/equipos");
 }
 
 export async function rechazarTrabajo(id: number, formData: FormData) {

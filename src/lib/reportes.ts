@@ -1,71 +1,136 @@
 import { db } from "@/lib/db";
 
-export type FilaEficiencia = {
+export type SegmentoRendimiento = {
   equipoId: string;
+  codigo: string;
+  nombre: string;
+  areaNombre: string;
+  tipoMedidor: string;
+  lecturaAnterior: number;
+  lecturaActual: number;
+  distancia: number;
+  combustible: number;
+  fecha: Date;
+  rendimiento: number;
+};
+
+type DatosEquipo = {
   codigo: string;
   nombre: string;
   tipoMedidor: string;
   areaNombre: string;
-  veces: number;
-  cantidadTotal: number;
-  deltaLectura: number | null;
-  eficiencia: number | null;
 };
 
-export async function getEficienciaPorEquipo(
-  desde: Date,
-  hasta: Date,
-): Promise<FilaEficiencia[]> {
+async function construirSegmentosPorEquipo(): Promise<
+  Map<string, { equipo: DatosEquipo; segmentos: SegmentoRendimiento[] }>
+> {
   const solicitudes = await db.solicitud.findMany({
-    where: {
-      estado: "DESPACHADA",
-      fechaDespacho: { gte: desde, lte: hasta },
-    },
+    where: { estado: "DESPACHADA", lecturaMedidor: { not: null } },
     include: { equipo: { include: { area: true } } },
     orderBy: { fechaDespacho: "asc" },
   });
 
-  const porEquipo = new Map<
+  const lecturasPorEquipo = new Map<
     string,
     {
-      equipo: (typeof solicitudes)[number]["equipo"];
-      cantidadTotal: number;
-      lecturas: number[];
-      veces: number;
+      equipo: DatosEquipo;
+      lecturas: { lectura: number; cantidad: number; fecha: Date }[];
     }
   >();
 
   for (const s of solicitudes) {
-    const actual = porEquipo.get(s.equipoId) ?? {
-      equipo: s.equipo,
-      cantidadTotal: 0,
+    if (s.lecturaMedidor == null || s.cantidadDespachada == null) continue;
+    const actual = lecturasPorEquipo.get(s.equipoId) ?? {
+      equipo: {
+        codigo: s.equipo.codigo,
+        nombre: s.equipo.nombre,
+        tipoMedidor: s.equipo.tipoMedidor,
+        areaNombre: s.equipo.area.nombre,
+      },
       lecturas: [],
-      veces: 0,
     };
-    actual.cantidadTotal += s.cantidadDespachada ?? 0;
-    if (s.lecturaMedidor != null) actual.lecturas.push(s.lecturaMedidor);
-    actual.veces += 1;
-    porEquipo.set(s.equipoId, actual);
+    actual.lecturas.push({
+      lectura: s.lecturaMedidor,
+      cantidad: s.cantidadDespachada,
+      fecha: s.fechaDespacho ?? s.fechaSolicitud,
+    });
+    lecturasPorEquipo.set(s.equipoId, actual);
   }
 
-  return Array.from(porEquipo.entries()).map(([equipoId, datos]) => {
-    const deltaLectura =
-      datos.lecturas.length > 1
-        ? Math.max(...datos.lecturas) - Math.min(...datos.lecturas)
-        : null;
-    return {
+  const resultado = new Map<
+    string,
+    { equipo: DatosEquipo; segmentos: SegmentoRendimiento[] }
+  >();
+
+  for (const [equipoId, datos] of lecturasPorEquipo) {
+    const segmentos: SegmentoRendimiento[] = [];
+    for (let i = 1; i < datos.lecturas.length; i++) {
+      const anterior = datos.lecturas[i - 1];
+      const actual = datos.lecturas[i];
+      const distancia = actual.lectura - anterior.lectura;
+      const combustible = actual.cantidad;
+      if (combustible > 0) {
+        segmentos.push({
+          equipoId,
+          codigo: datos.equipo.codigo,
+          nombre: datos.equipo.nombre,
+          areaNombre: datos.equipo.areaNombre,
+          tipoMedidor: datos.equipo.tipoMedidor,
+          lecturaAnterior: anterior.lectura,
+          lecturaActual: actual.lectura,
+          distancia,
+          combustible,
+          fecha: actual.fecha,
+          rendimiento: distancia / combustible,
+        });
+      }
+    }
+    resultado.set(equipoId, { equipo: datos.equipo, segmentos });
+  }
+
+  return resultado;
+}
+
+/** Para la pantalla: solo el último segmento (entre los dos rellenos más recientes) por equipo. */
+export async function getRendimientoActualPorEquipo(): Promise<
+  SegmentoRendimiento[]
+> {
+  const mapa = await construirSegmentosPorEquipo();
+  const filas: SegmentoRendimiento[] = [];
+  for (const { segmentos } of mapa.values()) {
+    const ultimo = segmentos[segmentos.length - 1];
+    if (ultimo) filas.push(ultimo);
+  }
+  return filas;
+}
+
+export type HistorialEquipo = {
+  equipoId: string;
+  codigo: string;
+  nombre: string;
+  areaNombre: string;
+  segmentos: SegmentoRendimiento[];
+  promedioGlobal: number;
+};
+
+/** Para el Excel: todos los segmentos de cada equipo, mas el promedio global desde el primer relleno. */
+export async function getHistorialRendimientoPorEquipo(): Promise<
+  HistorialEquipo[]
+> {
+  const mapa = await construirSegmentosPorEquipo();
+  const filas: HistorialEquipo[] = [];
+  for (const [equipoId, { equipo, segmentos }] of mapa) {
+    if (segmentos.length === 0) continue;
+    const promedioGlobal =
+      segmentos.reduce((suma, s) => suma + s.rendimiento, 0) / segmentos.length;
+    filas.push({
       equipoId,
-      codigo: datos.equipo.codigo,
-      nombre: datos.equipo.nombre,
-      tipoMedidor: datos.equipo.tipoMedidor,
-      areaNombre: datos.equipo.area.nombre,
-      veces: datos.veces,
-      cantidadTotal: datos.cantidadTotal,
-      deltaLectura,
-      eficiencia:
-        deltaLectura && deltaLectura > 0
-          ? datos.cantidadTotal / deltaLectura
-          : null,
-    };
-  });
+      codigo: equipo.codigo,
+      nombre: equipo.nombre,
+      areaNombre: equipo.areaNombre,
+      segmentos,
+      promedioGlobal,
+    });
+  }
+  return filas;
 }

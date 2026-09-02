@@ -12,6 +12,9 @@ export default async function NuevaSolicitudTrabajoPage() {
       id: true,
       codigo: true,
       nombre: true,
+      tipoMedidor: true,
+      lecturaActual: true,
+      requiereLectura: true,
       area: { select: { nombre: true } },
     },
   });

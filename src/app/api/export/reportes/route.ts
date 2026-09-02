@@ -1,43 +1,62 @@
-import type { NextRequest } from "next/server";
 import { requireRol } from "@/lib/permisos";
-import { getEficienciaPorEquipo } from "@/lib/reportes";
-import { generarExcel, respuestaExcel } from "@/lib/excel";
+import { getHistorialRendimientoPorEquipo } from "@/lib/reportes";
+import { generarExcelMultihoja, respuestaExcel } from "@/lib/excel";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   await requireRol("ADMIN");
 
-  const { searchParams } = request.nextUrl;
-  const hastaDefault = new Date();
-  const desdeDefault = new Date(hastaDefault);
-  desdeDefault.setDate(desdeDefault.getDate() - 7);
+  const historial = await getHistorialRendimientoPorEquipo();
 
-  const desdeParam = searchParams.get("desde");
-  const hastaParam = searchParams.get("hasta");
-  const desde = desdeParam ? new Date(desdeParam) : desdeDefault;
-  const hasta = hastaParam ? new Date(hastaParam) : hastaDefault;
-  hasta.setHours(23, 59, 59, 999);
-
-  const filas = await getEficienciaPorEquipo(desde, hasta);
-
-  const buffer = await generarExcel(
-    "Eficiencia",
-    [
-      { header: "Equipo", key: "equipo", width: 30 },
-      { header: "Área", key: "area", width: 30 },
-      { header: "Veces despachado", key: "veces", width: 16 },
-      { header: "Cantidad total (L)", key: "cantidadTotal", width: 18 },
-      { header: "Uso registrado", key: "uso", width: 16 },
-      { header: "Eficiencia (L/unidad)", key: "eficiencia", width: 20 },
-    ],
-    filas.map((f) => ({
-      equipo: `${f.codigo} — ${f.nombre}`,
-      area: f.areaNombre,
-      veces: f.veces,
-      cantidadTotal: Number(f.cantidadTotal.toFixed(2)),
-      uso: f.deltaLectura != null ? Number(f.deltaLectura.toFixed(2)) : "",
-      eficiencia: f.eficiencia != null ? Number(f.eficiencia.toFixed(3)) : "",
+  const filasDetalle = historial.flatMap((h) =>
+    h.segmentos.map((s) => ({
+      equipo: `${h.codigo} — ${h.nombre}`,
+      area: h.areaNombre,
+      fecha: s.fecha.toLocaleString("es"),
+      lecturaAnterior: s.lecturaAnterior,
+      lecturaActual: s.lecturaActual,
+      distancia: Number(s.distancia.toFixed(2)),
+      combustible: Number(s.combustible.toFixed(2)),
+      rendimiento: Number(s.rendimiento.toFixed(3)),
+      unidad: s.tipoMedidor === "ODOMETRO" ? "km/L" : "h/L",
     })),
   );
 
-  return respuestaExcel(buffer, "eficiencia-combustible.xlsx");
+  const filasPromedio = historial.map((h) => ({
+    equipo: `${h.codigo} — ${h.nombre}`,
+    area: h.areaNombre,
+    segmentos: h.segmentos.length,
+    promedioGlobal: Number(h.promedioGlobal.toFixed(3)),
+    unidad: h.segmentos[0]?.tipoMedidor === "ODOMETRO" ? "km/L" : "h/L",
+  }));
+
+  const buffer = await generarExcelMultihoja([
+    {
+      nombre: "Promedio global",
+      columnas: [
+        { header: "Equipo", key: "equipo", width: 30 },
+        { header: "Área", key: "area", width: 30 },
+        { header: "Rellenos considerados", key: "segmentos", width: 20 },
+        { header: "Promedio global", key: "promedioGlobal", width: 18 },
+        { header: "Unidad", key: "unidad", width: 10 },
+      ],
+      filas: filasPromedio,
+    },
+    {
+      nombre: "Historial detallado",
+      columnas: [
+        { header: "Equipo", key: "equipo", width: 30 },
+        { header: "Área", key: "area", width: 30 },
+        { header: "Fecha del relleno", key: "fecha", width: 20 },
+        { header: "Lectura anterior", key: "lecturaAnterior", width: 16 },
+        { header: "Lectura actual", key: "lecturaActual", width: 16 },
+        { header: "Distancia/uso", key: "distancia", width: 16 },
+        { header: "Combustible (L)", key: "combustible", width: 16 },
+        { header: "Rendimiento", key: "rendimiento", width: 14 },
+        { header: "Unidad", key: "unidad", width: 10 },
+      ],
+      filas: filasDetalle,
+    },
+  ]);
+
+  return respuestaExcel(buffer, "rendimiento-combustible.xlsx");
 }

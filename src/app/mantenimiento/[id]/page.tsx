@@ -2,7 +2,11 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/permisos";
 import EstadoBadge from "@/components/EstadoBadge";
-import { aprobarYCompletarTrabajo, rechazarTrabajo } from "../actions";
+import {
+  aprobarYCompletarTrabajo,
+  rechazarTrabajo,
+  editarLecturaTrabajo,
+} from "../actions";
 
 const ETIQUETA_TIPO: Record<string, string> = {
   MANTENIMIENTO: "Mantenimiento",
@@ -44,6 +48,7 @@ export default async function SolicitudTrabajoDetallePage({
 
   const aprobarConId = aprobarYCompletarTrabajo.bind(null, id);
   const rechazarConId = rechazarTrabajo.bind(null, id);
+  const editarLecturaConId = editarLecturaTrabajo.bind(null, id);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
@@ -62,6 +67,12 @@ export default async function SolicitudTrabajoDetallePage({
         />
         {solicitud.tipo === "REPARACION_LLANTA" && (
           <Campo label="¿Es ponchadura?" valor={solicitud.esPonchadura ? "Sí" : "No"} />
+        )}
+        {solicitud.lecturaMedidor != null && (
+          <Campo
+            label={solicitud.equipo.tipoMedidor === "ODOMETRO" ? "Odómetro" : "Horómetro"}
+            valor={String(solicitud.lecturaMedidor)}
+          />
         )}
         <Campo label="Solicitante" valor={solicitud.solicitante.nombre} />
         <Campo label="Área" valor={solicitud.area.nombre} />
@@ -90,6 +101,31 @@ export default async function SolicitudTrabajoDetallePage({
           <Campo label="Comentario" valor={solicitud.comentario} />
         )}
       </div>
+
+      {rol === "ADMIN" && solicitud.equipo.requiereLectura && (
+        <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-6">
+          <h2 className="text-sm font-semibold text-zinc-900">
+            Editar lectura ({solicitud.equipo.tipoMedidor === "ODOMETRO" ? "odómetro" : "horómetro"})
+          </h2>
+          <form action={editarLecturaConId} className="flex items-end gap-2">
+            <input
+              name="lecturaMedidor"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue={solicitud.lecturaMedidor ?? undefined}
+              required
+              className="rounded border border-zinc-300 px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              className="rounded bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+            >
+              Guardar
+            </button>
+          </form>
+        </div>
+      )}
 
       {puedeResolver && (
         <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-6">
