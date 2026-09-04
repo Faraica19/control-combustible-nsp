@@ -635,6 +635,23 @@ async function main() {
     }
   }
 
+  // --- Elimina solicitudes creadas solo para verificar el sistema (no son actividad real) ---
+  const idsSolicitudesPrueba = [1, 2, 3, 4];
+  for (const id of idsSolicitudesPrueba) {
+    const solicitud = await db.solicitud.findUnique({ where: { id } });
+    if (solicitud) {
+      await db.movimientoInventario.deleteMany({ where: { solicitudId: id } });
+      await db.solicitud.delete({ where: { id } });
+    }
+  }
+  const idsTrabajoPrueba = [1, 2, 4];
+  for (const id of idsTrabajoPrueba) {
+    const trabajo = await db.solicitudTrabajo.findUnique({ where: { id } });
+    if (trabajo) {
+      await db.solicitudTrabajo.delete({ where: { id } });
+    }
+  }
+
   console.log("Seed completado.");
   console.log({
     admin: admin.email,
