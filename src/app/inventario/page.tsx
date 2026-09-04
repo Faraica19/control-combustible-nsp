@@ -2,7 +2,12 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireRol } from "@/lib/permisos";
 import { getSaldos, getCostoPromedio } from "@/lib/inventario";
-import { eliminarEntrada } from "./actions";
+import { eliminarEntrada, editarFechaMovimiento } from "./actions";
+
+function paraInputFecha(fecha: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${fecha.getFullYear()}-${pad(fecha.getMonth() + 1)}-${pad(fecha.getDate())}T${pad(fecha.getHours())}:${pad(fecha.getMinutes())}`;
+}
 
 export default async function InventarioPage() {
   const session = await requireRol("BODEGA", "ADMIN", "CONSULTA");
@@ -44,7 +49,7 @@ export default async function InventarioPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         <div className="rounded-lg border border-zinc-200 bg-white p-6">
           <p className="text-xs text-zinc-500">Inventario diésel</p>
           <p className="text-2xl font-semibold text-zinc-900">
@@ -57,20 +62,31 @@ export default async function InventarioPage() {
             {saldos.GASOLINA} L
           </p>
         </div>
+        <div className="rounded-lg border border-zinc-200 bg-white p-6" />
         <div className="rounded-lg border border-zinc-200 bg-white p-6">
           <p className="text-xs text-zinc-500">Costo promedio diésel</p>
-          <p className="text-2xl font-semibold text-zinc-900">
-            {costoPromedio.DIESEL != null
-              ? `C$${costoPromedio.DIESEL.toFixed(2)}/L`
+          <p className="text-xl font-semibold text-zinc-900">
+            {costoPromedio.DIESEL.cordobas != null
+              ? `C$${costoPromedio.DIESEL.cordobas.toFixed(2)}/L`
               : "N/D"}
+          </p>
+          <p className="text-sm text-zinc-500">
+            {costoPromedio.DIESEL.usd != null
+              ? `US$${costoPromedio.DIESEL.usd.toFixed(2)}/L`
+              : "US$ N/D"}
           </p>
         </div>
         <div className="rounded-lg border border-zinc-200 bg-white p-6">
           <p className="text-xs text-zinc-500">Costo promedio gasolina</p>
-          <p className="text-2xl font-semibold text-zinc-900">
-            {costoPromedio.GASOLINA != null
-              ? `C$${costoPromedio.GASOLINA.toFixed(2)}/L`
+          <p className="text-xl font-semibold text-zinc-900">
+            {costoPromedio.GASOLINA.cordobas != null
+              ? `C$${costoPromedio.GASOLINA.cordobas.toFixed(2)}/L`
               : "N/D"}
+          </p>
+          <p className="text-sm text-zinc-500">
+            {costoPromedio.GASOLINA.usd != null
+              ? `US$${costoPromedio.GASOLINA.usd.toFixed(2)}/L`
+              : "US$ N/D"}
           </p>
         </div>
       </div>
@@ -84,7 +100,8 @@ export default async function InventarioPage() {
               <th className="px-3 py-2">Combustible</th>
               <th className="px-3 py-2">Cantidad</th>
               <th className="px-3 py-2">Factura</th>
-              <th className="px-3 py-2">Costo</th>
+              <th className="px-3 py-2">Costo C$</th>
+              <th className="px-3 py-2">Costo US$</th>
               <th className="px-3 py-2">Proveedor</th>
               <th className="px-3 py-2">Registrado por</th>
               {esAdmin && <th className="px-3 py-2" />}
@@ -100,22 +117,47 @@ export default async function InventarioPage() {
                 <td className="px-3 py-2">
                   {m.costo != null ? `C$${m.costo.toFixed(2)}` : "—"}
                 </td>
+                <td className="px-3 py-2">
+                  {m.costoUSD != null ? `US$${m.costoUSD.toFixed(2)}` : "—"}
+                </td>
                 <td className="px-3 py-2">{m.proveedor ?? "—"}</td>
                 <td className="px-3 py-2">{m.usuario.nombre}</td>
                 {esAdmin && (
                   <td className="px-3 py-2">
-                    <form action={eliminarEntrada.bind(null, m.id)}>
-                      <button className="text-red-600 underline hover:text-red-800">
-                        Eliminar
-                      </button>
-                    </form>
+                    <div className="flex flex-col gap-1">
+                      <details>
+                        <summary className="cursor-pointer text-zinc-600 underline hover:text-zinc-900">
+                          Fecha
+                        </summary>
+                        <form
+                          action={editarFechaMovimiento.bind(null, m.id)}
+                          className="mt-1 flex flex-col gap-1"
+                        >
+                          <input
+                            name="fecha"
+                            type="datetime-local"
+                            defaultValue={paraInputFecha(m.fecha)}
+                            required
+                            className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                          />
+                          <button className="rounded bg-zinc-900 px-2 py-1 text-xs text-white hover:bg-zinc-800">
+                            Guardar
+                          </button>
+                        </form>
+                      </details>
+                      <form action={eliminarEntrada.bind(null, m.id)}>
+                        <button className="text-red-600 underline hover:text-red-800">
+                          Eliminar
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 )}
               </tr>
             ))}
             {entradas.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-zinc-400">
+                <td colSpan={9} className="px-3 py-6 text-center text-zinc-400">
                   Sin entradas registradas.
                 </td>
               </tr>
@@ -134,6 +176,7 @@ export default async function InventarioPage() {
               <th className="px-3 py-2">Cantidad</th>
               <th className="px-3 py-2">Solicitud</th>
               <th className="px-3 py-2">Despachado por</th>
+              {esAdmin && <th className="px-3 py-2" />}
             </tr>
           </thead>
           <tbody>
@@ -148,11 +191,35 @@ export default async function InventarioPage() {
                     : "—"}
                 </td>
                 <td className="px-3 py-2">{m.usuario.nombre}</td>
+                {esAdmin && (
+                  <td className="px-3 py-2">
+                    <details>
+                      <summary className="cursor-pointer text-zinc-600 underline hover:text-zinc-900">
+                        Fecha
+                      </summary>
+                      <form
+                        action={editarFechaMovimiento.bind(null, m.id)}
+                        className="mt-1 flex flex-col gap-1"
+                      >
+                        <input
+                          name="fecha"
+                          type="datetime-local"
+                          defaultValue={paraInputFecha(m.fecha)}
+                          required
+                          className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                        />
+                        <button className="rounded bg-zinc-900 px-2 py-1 text-xs text-white hover:bg-zinc-800">
+                          Guardar
+                        </button>
+                      </form>
+                    </details>
+                  </td>
+                )}
               </tr>
             ))}
             {salidas.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-zinc-400">
+                <td colSpan={6} className="px-3 py-6 text-center text-zinc-400">
                   Sin salidas registradas.
                 </td>
               </tr>

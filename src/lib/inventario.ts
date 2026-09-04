@@ -24,23 +24,39 @@ export async function getSaldo(tipoCombustible: TipoCombustible) {
   return saldos[tipoCombustible];
 }
 
-export async function getCostoPromedio(): Promise<
-  Record<TipoCombustible, number | null>
-> {
-  const entradas = await db.movimientoInventario.groupBy({
-    by: ["tipoCombustible"],
-    where: { tipo: "ENTRADA", costo: { not: null } },
-    _sum: { cantidad: true, costo: true },
-  });
+export type CostoPromedio = { cordobas: number | null; usd: number | null };
 
-  const promedio: Record<string, number | null> = {
-    DIESEL: null,
-    GASOLINA: null,
+export async function getCostoPromedio(): Promise<
+  Record<TipoCombustible, CostoPromedio>
+> {
+  const [entradasCordobas, entradasUsd] = await Promise.all([
+    db.movimientoInventario.groupBy({
+      by: ["tipoCombustible"],
+      where: { tipo: "ENTRADA", costo: { not: null } },
+      _sum: { cantidad: true, costo: true },
+    }),
+    db.movimientoInventario.groupBy({
+      by: ["tipoCombustible"],
+      where: { tipo: "ENTRADA", costoUSD: { not: null } },
+      _sum: { cantidad: true, costoUSD: true },
+    }),
+  ]);
+
+  const promedio: Record<string, CostoPromedio> = {
+    DIESEL: { cordobas: null, usd: null },
+    GASOLINA: { cordobas: null, usd: null },
   };
-  for (const e of entradas) {
+
+  for (const e of entradasCordobas) {
     const cantidad = e._sum.cantidad ?? 0;
     const costo = e._sum.costo ?? 0;
-    promedio[e.tipoCombustible] = cantidad > 0 ? costo / cantidad : null;
+    promedio[e.tipoCombustible].cordobas = cantidad > 0 ? costo / cantidad : null;
   }
-  return promedio as Record<TipoCombustible, number | null>;
+  for (const e of entradasUsd) {
+    const cantidad = e._sum.cantidad ?? 0;
+    const costoUSD = e._sum.costoUSD ?? 0;
+    promedio[e.tipoCombustible].usd = cantidad > 0 ? costoUSD / cantidad : null;
+  }
+
+  return promedio as Record<TipoCombustible, CostoPromedio>;
 }

@@ -17,6 +17,8 @@ export async function registrarEntrada(formData: FormData) {
   const proveedor = String(formData.get("proveedor") ?? "").trim();
   const costoRaw = String(formData.get("costo") ?? "").trim();
   const costo = costoRaw ? Number(costoRaw) : null;
+  const costoUSDRaw = String(formData.get("costoUSD") ?? "").trim();
+  const costoUSD = costoUSDRaw ? Number(costoUSDRaw) : null;
 
   if (!["DIESEL", "GASOLINA"].includes(tipoCombustible) || !(cantidad > 0)) {
     throw new Error("Datos de inventario inválidos.");
@@ -25,7 +27,10 @@ export async function registrarEntrada(formData: FormData) {
     throw new Error("El número de factura es obligatorio.");
   }
   if (costo != null && (Number.isNaN(costo) || costo < 0)) {
-    throw new Error("El costo de la factura no es válido.");
+    throw new Error("El costo en córdobas no es válido.");
+  }
+  if (costoUSD != null && (Number.isNaN(costoUSD) || costoUSD < 0)) {
+    throw new Error("El costo en dólares no es válido.");
   }
 
   await db.movimientoInventario.create({
@@ -35,6 +40,7 @@ export async function registrarEntrada(formData: FormData) {
       cantidad,
       numeroFactura,
       costo,
+      costoUSD,
       proveedor: proveedor || null,
       usuarioId: session.user.id,
     },
@@ -42,6 +48,30 @@ export async function registrarEntrada(formData: FormData) {
 
   revalidatePath("/inventario");
   redirect("/inventario");
+}
+
+export async function editarFechaMovimiento(id: string, formData: FormData) {
+  await requireRol("ADMIN");
+
+  const fechaRaw = String(formData.get("fecha") ?? "").trim();
+  if (!fechaRaw) throw new Error("Fecha inválida.");
+  const fecha = new Date(fechaRaw);
+  if (Number.isNaN(fecha.getTime())) throw new Error("Fecha inválida.");
+
+  const movimiento = await db.movimientoInventario.findUnique({ where: { id } });
+  if (!movimiento) throw new Error("Movimiento no encontrado.");
+
+  await db.movimientoInventario.update({ where: { id }, data: { fecha } });
+
+  if (movimiento.solicitudId) {
+    await db.solicitud.update({
+      where: { id: movimiento.solicitudId },
+      data: { fechaDespacho: fecha },
+    });
+  }
+
+  revalidatePath("/inventario");
+  revalidatePath("/solicitudes");
 }
 
 export async function eliminarEntrada(id: string) {

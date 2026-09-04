@@ -108,6 +108,57 @@ export async function despacharBodega(id: number, formData: FormData) {
   redirect(`/solicitudes/${id}`);
 }
 
+export async function editarLecturaSolicitud(id: number, formData: FormData) {
+  await requireRol("ADMIN");
+  const solicitud = await cargarSolicitud(id);
+
+  const nuevaLecturaRaw = String(formData.get("lecturaMedidor") ?? "").trim();
+  const nuevaLectura = nuevaLecturaRaw ? Number(nuevaLecturaRaw) : null;
+
+  if (nuevaLectura == null || Number.isNaN(nuevaLectura) || nuevaLectura < 0) {
+    throw new Error("Lectura inválida.");
+  }
+
+  await db.solicitud.update({
+    where: { id },
+    data: { lecturaMedidor: nuevaLectura },
+  });
+
+  const equipo = await db.equipo.findUnique({ where: { id: solicitud.equipoId } });
+  if (equipo && nuevaLectura > equipo.lecturaActual) {
+    await db.equipo.update({
+      where: { id: solicitud.equipoId },
+      data: { lecturaActual: nuevaLectura },
+    });
+  }
+
+  revalidatePath(`/solicitudes/${id}`);
+  revalidatePath("/equipos");
+}
+
+export async function editarFechaSolicitud(id: number, formData: FormData) {
+  await requireRol("ADMIN");
+  await cargarSolicitud(id);
+
+  const fechaRaw = String(formData.get("fechaDespacho") ?? "").trim();
+  if (!fechaRaw) throw new Error("Fecha inválida.");
+  const fecha = new Date(fechaRaw);
+  if (Number.isNaN(fecha.getTime())) throw new Error("Fecha inválida.");
+
+  await db.solicitud.update({
+    where: { id },
+    data: { fechaDespacho: fecha },
+  });
+
+  await db.movimientoInventario.updateMany({
+    where: { solicitudId: id },
+    data: { fecha },
+  });
+
+  revalidatePath(`/solicitudes/${id}`);
+  revalidatePath("/inventario");
+}
+
 export async function rechazarBodega(id: number, formData: FormData) {
   const session = await requireRol("BODEGA", "ADMIN");
   const solicitud = await cargarSolicitud(id);

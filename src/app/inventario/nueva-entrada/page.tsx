@@ -75,6 +75,23 @@ export default async function NuevaEntradaPage() {
         </div>
 
         <div className="flex flex-col gap-1">
+          <label htmlFor="costoUSD" className="text-sm font-medium text-zinc-700">
+            Costo total de la factura (US$, opcional)
+          </label>
+          <input
+            id="costoUSD"
+            name="costoUSD"
+            type="number"
+            step="0.01"
+            min="0"
+            className="rounded border border-zinc-300 px-3 py-2 text-sm"
+          />
+          <p className="text-xs text-zinc-500">
+            Si el proveedor cotiza en dólares, ponlo aquí para tener el promedio también en US$.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1">
           <label htmlFor="proveedor" className="text-sm font-medium text-zinc-700">
             Proveedor (opcional)
           </label>

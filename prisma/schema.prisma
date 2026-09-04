@@ -167,6 +167,7 @@ model MovimientoInventario {
   fecha           DateTime        @default(now())
   numeroFactura   String?
   costo           Float?
+  costoUSD        Float?
   proveedor       String?
   usuarioId       String
   usuario         User            @relation(fields: [usuarioId], references: [id])

@@ -2,7 +2,17 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/permisos";
 import EstadoBadge from "@/components/EstadoBadge";
-import { despacharBodega, rechazarBodega } from "../actions";
+import {
+  despacharBodega,
+  rechazarBodega,
+  editarLecturaSolicitud,
+  editarFechaSolicitud,
+} from "../actions";
+
+function paraInputFecha(fecha: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${fecha.getFullYear()}-${pad(fecha.getMonth() + 1)}-${pad(fecha.getDate())}T${pad(fecha.getHours())}:${pad(fecha.getMinutes())}`;
+}
 
 export default async function SolicitudDetallePage({
   params,
@@ -38,6 +48,8 @@ export default async function SolicitudDetallePage({
 
   const despacharBodegaConId = despacharBodega.bind(null, id);
   const rechazarBodegaConId = rechazarBodega.bind(null, id);
+  const editarLecturaConId = editarLecturaSolicitud.bind(null, id);
+  const editarFechaConId = editarFechaSolicitud.bind(null, id);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
@@ -77,6 +89,60 @@ export default async function SolicitudDetallePage({
           <Campo label="Comentario bodega" valor={solicitud.comentarioBodega} />
         )}
       </div>
+
+      {rol === "ADMIN" && (
+        <div className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-6">
+          <h2 className="text-sm font-semibold text-zinc-900">
+            Corregir datos (solo administrador)
+          </h2>
+          {solicitud.equipo.requiereLectura && (
+            <form action={editarLecturaConId} className="flex items-end gap-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-zinc-700">
+                  {solicitud.equipo.tipoMedidor === "ODOMETRO" ? "Odómetro" : "Horómetro"}
+                </label>
+                <input
+                  name="lecturaMedidor"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={solicitud.lecturaMedidor ?? undefined}
+                  required
+                  className="rounded border border-zinc-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <button
+                type="submit"
+                className="rounded bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+              >
+                Guardar lectura
+              </button>
+            </form>
+          )}
+          <form action={editarFechaConId} className="flex items-end gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-zinc-700">
+                Fecha de despacho
+              </label>
+              <input
+                name="fechaDespacho"
+                type="datetime-local"
+                defaultValue={paraInputFecha(
+                  solicitud.fechaDespacho ?? solicitud.fechaSolicitud,
+                )}
+                required
+                className="rounded border border-zinc-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              className="rounded bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+            >
+              Guardar fecha
+            </button>
+          </form>
+        </div>
+      )}
 
       {puedeDespachar && (
         <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-6">
