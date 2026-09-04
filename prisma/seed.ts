@@ -611,6 +611,30 @@ async function main() {
     data: { proveedor: "Agroservicios Nagarote" },
   });
 
+  // El inventario quedó negativo en gasolina al cargar el histórico: el usuario
+  // indicó que esa diferencia ya existía como inventario inicial no registrado.
+  const inventarioInicialGasolina = await db.movimientoInventario.findFirst({
+    where: { numeroFactura: "INV-INICIAL-GASOLINA" },
+  });
+  if (inventarioInicialGasolina && inventarioInicialGasolina.cantidad === 61.06) {
+    const movimientosGasolina = await db.movimientoInventario.groupBy({
+      by: ["tipo"],
+      where: { tipoCombustible: "GASOLINA" },
+      _sum: { cantidad: true },
+    });
+    let saldoGasolina = 0;
+    for (const m of movimientosGasolina) {
+      const cantidad = m._sum.cantidad ?? 0;
+      saldoGasolina += m.tipo === "ENTRADA" ? cantidad : -cantidad;
+    }
+    if (saldoGasolina < 0) {
+      await db.movimientoInventario.update({
+        where: { id: inventarioInicialGasolina.id },
+        data: { cantidad: inventarioInicialGasolina.cantidad + Math.abs(saldoGasolina) },
+      });
+    }
+  }
+
   console.log("Seed completado.");
   console.log({
     admin: admin.email,
