@@ -8,10 +8,22 @@ function paraInputDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
+function limitesDelMes(mesParam: string) {
+  const [anioStr, mesStr] = mesParam.split("-");
+  const anio = Number(anioStr);
+  const mes = Number(mesStr);
+  const ultimoDia = new Date(anio, mes, 0).getDate();
+  const desde = new Date(`${anioStr}-${mesStr}-01T00:00:00-06:00`);
+  const hasta = new Date(
+    `${anioStr}-${mesStr}-${String(ultimoDia).padStart(2, "0")}T23:59:59-06:00`,
+  );
+  return { desde, hasta };
+}
+
 export default async function ConsumoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ equipoId?: string; desde?: string; hasta?: string }>;
+  searchParams: Promise<{ equipoId?: string; mes?: string; desde?: string; hasta?: string }>;
 }) {
   await requireRol("BODEGA", "ADMIN", "CONSULTA");
   const params = await searchParams;
@@ -20,9 +32,15 @@ export default async function ConsumoPage({
   const desdeDefault = new Date(hastaDefault);
   desdeDefault.setDate(desdeDefault.getDate() - 30);
 
-  const desde = params.desde ? new Date(params.desde) : desdeDefault;
-  const hasta = params.hasta ? new Date(params.hasta) : hastaDefault;
-  hasta.setHours(23, 59, 59, 999);
+  let desde: Date;
+  let hasta: Date;
+  if (params.mes) {
+    ({ desde, hasta } = limitesDelMes(params.mes));
+  } else {
+    desde = params.desde ? new Date(params.desde) : desdeDefault;
+    hasta = params.hasta ? new Date(params.hasta) : hastaDefault;
+    hasta.setHours(23, 59, 59, 999);
+  }
   const equipoId = params.equipoId || undefined;
 
   const [equipos, consumo, costoPromedio] = await Promise.all([
@@ -61,7 +79,7 @@ export default async function ConsumoPage({
         Consumo de combustible por equipo
       </h1>
 
-      <form className="flex flex-wrap items-end gap-3 rounded-lg border border-zinc-200 bg-white p-4">
+      <form className="flex flex-wrap items-end gap-6 rounded-lg border border-zinc-200 bg-white p-5">
         <div className="flex flex-col gap-1">
           <label htmlFor="equipoId" className="text-xs font-medium text-zinc-700">
             Equipo
@@ -81,36 +99,53 @@ export default async function ConsumoPage({
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="desde" className="text-xs font-medium text-zinc-700">
-            Desde
+          <label htmlFor="mes" className="text-xs font-medium text-zinc-700">
+            Mes
           </label>
           <input
-            id="desde"
-            name="desde"
-            type="date"
-            defaultValue={paraInputDate(desde)}
+            id="mes"
+            name="mes"
+            type="month"
+            defaultValue={params.mes ?? ""}
             className="rounded border border-zinc-300 px-2 py-1 text-sm"
           />
         </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="hasta" className="text-xs font-medium text-zinc-700">
-            Hasta
-          </label>
-          <input
-            id="hasta"
-            name="hasta"
-            type="date"
-            defaultValue={paraInputDate(hasta)}
-            className="rounded border border-zinc-300 px-2 py-1 text-sm"
-          />
+        <div className="flex items-end gap-3 border-l border-zinc-200 pl-6">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="desde" className="text-xs font-medium text-zinc-700">
+              Desde
+            </label>
+            <input
+              id="desde"
+              name="desde"
+              type="date"
+              defaultValue={paraInputDate(desde)}
+              className="rounded border border-zinc-300 px-2 py-1 text-sm"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="hasta" className="text-xs font-medium text-zinc-700">
+              Hasta
+            </label>
+            <input
+              id="hasta"
+              name="hasta"
+              type="date"
+              defaultValue={paraInputDate(hasta)}
+              className="rounded border border-zinc-300 px-2 py-1 text-sm"
+            />
+          </div>
         </div>
         <button
           type="submit"
-          className="rounded bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+          className="ml-auto rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
         >
           Filtrar
         </button>
       </form>
+      <p className="-mt-2 text-xs text-zinc-500">
+        Si eliges un mes, se usa ese mes completo y se ignoran los campos Desde/Hasta.
+      </p>
 
       {!equipoSeleccionado && (
         <>
