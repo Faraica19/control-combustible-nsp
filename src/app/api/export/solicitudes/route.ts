@@ -1,6 +1,7 @@
 import { requireSession } from "@/lib/permisos";
 import { db } from "@/lib/db";
 import { generarExcel, respuestaExcel } from "@/lib/excel";
+import { formatFecha } from "@/lib/fecha";
 
 const ETIQUETA_ESTADO: Record<string, string> = {
   PENDIENTE_BODEGA: "Pendiente bodega",
@@ -48,8 +49,8 @@ export async function GET() {
       cantidadDespachada: s.cantidadDespachada ?? "",
       lectura: s.lecturaMedidor,
       estado: ETIQUETA_ESTADO[s.estado] ?? s.estado,
-      fechaSolicitud: s.fechaSolicitud.toLocaleString("es"),
-      fechaDespacho: s.fechaDespacho ? s.fechaDespacho.toLocaleString("es") : "",
+      fechaSolicitud: formatFecha(s.fechaSolicitud),
+      fechaDespacho: s.fechaDespacho ? formatFecha(s.fechaDespacho) : "",
       bodeguero: s.bodeguero?.nombre ?? "",
       comentarioBodega: s.comentarioBodega ?? "",
     })),

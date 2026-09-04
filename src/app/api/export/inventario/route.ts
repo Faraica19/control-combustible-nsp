@@ -2,6 +2,7 @@ import { requireRol } from "@/lib/permisos";
 import { db } from "@/lib/db";
 import { getSaldos, getCostoPromedio } from "@/lib/inventario";
 import { generarExcelMultihoja, respuestaExcel } from "@/lib/excel";
+import { formatFecha } from "@/lib/fecha";
 
 export async function GET() {
   await requireRol("BODEGA", "ADMIN", "CONSULTA");
@@ -32,7 +33,7 @@ export async function GET() {
         { header: "Registrado por", key: "usuario", width: 20 },
       ],
       filas: entradas.map((m) => ({
-        fecha: m.fecha.toLocaleString("es"),
+        fecha: formatFecha(m.fecha),
         combustible: m.tipoCombustible,
         cantidad: m.cantidad,
         factura: m.numeroFactura ?? "",
@@ -57,7 +58,7 @@ export async function GET() {
         const costoCordobas = costoPromedio[m.tipoCombustible].cordobas;
         const costoUsd = costoPromedio[m.tipoCombustible].usd;
         return {
-          fecha: m.fecha.toLocaleString("es"),
+          fecha: formatFecha(m.fecha),
           combustible: m.tipoCombustible,
           cantidad: m.cantidad,
           valor:

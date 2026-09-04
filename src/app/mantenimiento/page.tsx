@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/permisos";
 import EstadoBadge from "@/components/EstadoBadge";
+import { formatFechaCorta } from "@/lib/fecha";
 
 const ETIQUETA_TIPO: Record<string, string> = {
   MANTENIMIENTO: "Mantenimiento",
@@ -65,7 +66,7 @@ export default async function MantenimientoPage() {
                 <td className="px-3 py-2">{s.solicitante.nombre}</td>
                 <td className="px-3 py-2">{s.area.nombre}</td>
                 <td className="px-3 py-2">
-                  {s.fechaSolicitud.toLocaleDateString("es")}
+                  {formatFechaCorta(s.fechaSolicitud)}
                 </td>
                 <td className="px-3 py-2">
                   <EstadoBadge estado={s.estado} />

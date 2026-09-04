@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireRol } from "@/lib/permisos";
 import { db } from "@/lib/db";
 import { getSaldo } from "@/lib/inventario";
+import { parseFechaLocal } from "@/lib/fecha";
 
 export async function crearSolicitud(formData: FormData) {
   const session = await requireRol("SOLICITANTE", "BODEGA", "ADMIN");
@@ -134,6 +135,7 @@ export async function editarLecturaSolicitud(id: number, formData: FormData) {
 
   revalidatePath(`/solicitudes/${id}`);
   revalidatePath("/equipos");
+  revalidatePath("/inventario");
 }
 
 export async function editarFechaSolicitud(id: number, formData: FormData) {
@@ -142,7 +144,7 @@ export async function editarFechaSolicitud(id: number, formData: FormData) {
 
   const fechaRaw = String(formData.get("fechaDespacho") ?? "").trim();
   if (!fechaRaw) throw new Error("Fecha inválida.");
-  const fecha = new Date(fechaRaw);
+  const fecha = parseFechaLocal(fechaRaw);
   if (Number.isNaN(fecha.getTime())) throw new Error("Fecha inválida.");
 
   await db.solicitud.update({

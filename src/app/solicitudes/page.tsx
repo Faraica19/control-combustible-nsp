@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireSession } from "@/lib/permisos";
 import EstadoBadge from "@/components/EstadoBadge";
+import { formatFechaCorta } from "@/lib/fecha";
 
 export default async function SolicitudesPage() {
   const session = await requireSession();
@@ -63,7 +64,7 @@ export default async function SolicitudesPage() {
                 <td className="px-3 py-2">{s.tipoCombustible}</td>
                 <td className="px-3 py-2">{s.cantidadSolicitada}</td>
                 <td className="px-3 py-2">
-                  {s.fechaSolicitud.toLocaleDateString("es")}
+                  {formatFechaCorta(s.fechaSolicitud)}
                 </td>
                 <td className="px-3 py-2">
                   <EstadoBadge estado={s.estado} />

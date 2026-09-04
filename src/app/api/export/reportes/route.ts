@@ -1,6 +1,7 @@
 import { requireRol } from "@/lib/permisos";
 import { getHistorialRendimientoPorEquipo } from "@/lib/reportes";
 import { generarExcelMultihoja, respuestaExcel } from "@/lib/excel";
+import { formatFecha } from "@/lib/fecha";
 
 export async function GET() {
   await requireRol("ADMIN");
@@ -11,7 +12,7 @@ export async function GET() {
     h.segmentos.map((s) => ({
       equipo: `${h.codigo} — ${h.nombre}`,
       area: h.areaNombre,
-      fecha: s.fecha.toLocaleString("es"),
+      fecha: formatFecha(s.fecha),
       lecturaAnterior: s.lecturaAnterior,
       lecturaActual: s.lecturaActual,
       distancia: Number(s.distancia.toFixed(2)),

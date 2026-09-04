@@ -3,11 +3,8 @@ import { db } from "@/lib/db";
 import { requireRol } from "@/lib/permisos";
 import { getSaldos, getCostoPromedio } from "@/lib/inventario";
 import { eliminarEntrada, editarFechaMovimiento, editarEntrada } from "./actions";
-
-function paraInputFecha(fecha: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${fecha.getFullYear()}-${pad(fecha.getMonth() + 1)}-${pad(fecha.getDate())}T${pad(fecha.getHours())}:${pad(fecha.getMinutes())}`;
-}
+import { editarLecturaSolicitud } from "../solicitudes/actions";
+import { formatFecha, paraInputFechaLocal } from "@/lib/fecha";
 
 export default async function InventarioPage() {
   const session = await requireRol("BODEGA", "ADMIN", "CONSULTA");
@@ -110,7 +107,7 @@ export default async function InventarioPage() {
           <tbody>
             {entradas.map((m) => (
               <tr key={m.id} className="border-t border-zinc-100">
-                <td className="px-3 py-2">{m.fecha.toLocaleString("es")}</td>
+                <td className="px-3 py-2">{formatFecha(m.fecha)}</td>
                 <td className="px-3 py-2">{m.tipoCombustible}</td>
                 <td className="px-3 py-2">+{m.cantidad} L</td>
                 <td className="px-3 py-2">{m.numeroFactura ?? "—"}</td>
@@ -136,7 +133,7 @@ export default async function InventarioPage() {
                           <input
                             name="fecha"
                             type="datetime-local"
-                            defaultValue={paraInputFecha(m.fecha)}
+                            defaultValue={paraInputFechaLocal(m.fecha)}
                             required
                             className="rounded border border-zinc-300 px-2 py-1 text-xs"
                           />
@@ -225,7 +222,7 @@ export default async function InventarioPage() {
           <tbody>
             {salidas.map((m) => (
               <tr key={m.id} className="border-t border-zinc-100">
-                <td className="px-3 py-2">{m.fecha.toLocaleString("es")}</td>
+                <td className="px-3 py-2">{formatFecha(m.fecha)}</td>
                 <td className="px-3 py-2">{m.tipoCombustible}</td>
                 <td className="px-3 py-2">-{m.cantidad} L</td>
                 <td className="px-3 py-2">
@@ -236,26 +233,52 @@ export default async function InventarioPage() {
                 <td className="px-3 py-2">{m.usuario.nombre}</td>
                 {esAdmin && (
                   <td className="px-3 py-2">
-                    <details>
-                      <summary className="cursor-pointer text-zinc-600 underline hover:text-zinc-900">
-                        Fecha
-                      </summary>
-                      <form
-                        action={editarFechaMovimiento.bind(null, m.id)}
-                        className="mt-1 flex flex-col gap-1"
-                      >
-                        <input
-                          name="fecha"
-                          type="datetime-local"
-                          defaultValue={paraInputFecha(m.fecha)}
-                          required
-                          className="rounded border border-zinc-300 px-2 py-1 text-xs"
-                        />
-                        <button className="rounded bg-zinc-900 px-2 py-1 text-xs text-white hover:bg-zinc-800">
-                          Guardar
-                        </button>
-                      </form>
-                    </details>
+                    <div className="flex flex-col gap-1">
+                      <details>
+                        <summary className="cursor-pointer text-zinc-600 underline hover:text-zinc-900">
+                          Fecha
+                        </summary>
+                        <form
+                          action={editarFechaMovimiento.bind(null, m.id)}
+                          className="mt-1 flex flex-col gap-1"
+                        >
+                          <input
+                            name="fecha"
+                            type="datetime-local"
+                            defaultValue={paraInputFechaLocal(m.fecha)}
+                            required
+                            className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                          />
+                          <button className="rounded bg-zinc-900 px-2 py-1 text-xs text-white hover:bg-zinc-800">
+                            Guardar
+                          </button>
+                        </form>
+                      </details>
+                      {m.solicitud && m.solicitud.equipo.requiereLectura && (
+                        <details>
+                          <summary className="cursor-pointer text-zinc-600 underline hover:text-zinc-900">
+                            {m.solicitud.equipo.tipoMedidor === "ODOMETRO" ? "Odómetro" : "Horómetro"}
+                          </summary>
+                          <form
+                            action={editarLecturaSolicitud.bind(null, m.solicitud.id)}
+                            className="mt-1 flex flex-col gap-1"
+                          >
+                            <input
+                              name="lecturaMedidor"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              defaultValue={m.solicitud.lecturaMedidor ?? ""}
+                              required
+                              className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                            />
+                            <button className="rounded bg-zinc-900 px-2 py-1 text-xs text-white hover:bg-zinc-800">
+                              Guardar
+                            </button>
+                          </form>
+                        </details>
+                      )}
+                    </div>
                   </td>
                 )}
               </tr>

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRol } from "@/lib/permisos";
 import { db } from "@/lib/db";
+import { parseFechaLocal } from "@/lib/fecha";
 import type { TipoCombustible } from "@/generated/prisma/enums";
 
 export async function registrarEntrada(formData: FormData) {
@@ -55,7 +56,7 @@ export async function editarFechaMovimiento(id: string, formData: FormData) {
 
   const fechaRaw = String(formData.get("fecha") ?? "").trim();
   if (!fechaRaw) throw new Error("Fecha inválida.");
-  const fecha = new Date(fechaRaw);
+  const fecha = parseFechaLocal(fechaRaw);
   if (Number.isNaN(fecha.getTime())) throw new Error("Fecha inválida.");
 
   const movimiento = await db.movimientoInventario.findUnique({ where: { id } });

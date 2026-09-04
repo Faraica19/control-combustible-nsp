@@ -7,6 +7,7 @@ import {
   rechazarTrabajo,
   editarLecturaTrabajo,
 } from "../actions";
+import { formatFecha } from "@/lib/fecha";
 
 const ETIQUETA_TIPO: Record<string, string> = {
   MANTENIMIENTO: "Mantenimiento",
@@ -78,7 +79,7 @@ export default async function SolicitudTrabajoDetallePage({
         <Campo label="Área" valor={solicitud.area.nombre} />
         <Campo
           label="Fecha de solicitud"
-          valor={solicitud.fechaSolicitud.toLocaleString("es")}
+          valor={formatFecha(solicitud.fechaSolicitud)}
         />
         {solicitud.descripcion && (
           <Campo label="Descripción" valor={solicitud.descripcion} />

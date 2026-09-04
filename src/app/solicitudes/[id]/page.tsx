@@ -8,11 +8,7 @@ import {
   editarLecturaSolicitud,
   editarFechaSolicitud,
 } from "../actions";
-
-function paraInputFecha(fecha: Date) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${fecha.getFullYear()}-${pad(fecha.getMonth() + 1)}-${pad(fecha.getDate())}T${pad(fecha.getHours())}:${pad(fecha.getMinutes())}`;
-}
+import { formatFecha, paraInputFechaLocal } from "@/lib/fecha";
 
 export default async function SolicitudDetallePage({
   params,
@@ -74,7 +70,7 @@ export default async function SolicitudDetallePage({
         <Campo label="Cantidad solicitada" valor={`${solicitud.cantidadSolicitada} L`} />
         <Campo
           label="Fecha de solicitud"
-          valor={solicitud.fechaSolicitud.toLocaleString("es")}
+          valor={formatFecha(solicitud.fechaSolicitud)}
         />
         {solicitud.bodeguero && (
           <Campo label="Bodeguero" valor={solicitud.bodeguero.nombre} />
@@ -127,7 +123,7 @@ export default async function SolicitudDetallePage({
               <input
                 name="fechaDespacho"
                 type="datetime-local"
-                defaultValue={paraInputFecha(
+                defaultValue={paraInputFechaLocal(
                   solicitud.fechaDespacho ?? solicitud.fechaSolicitud,
                 )}
                 required
