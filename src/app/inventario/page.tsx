@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireRol } from "@/lib/permisos";
 import { getSaldos, getCostoPromedio } from "@/lib/inventario";
-import { eliminarEntrada, editarFechaMovimiento } from "./actions";
+import { eliminarEntrada, editarFechaMovimiento, editarEntrada } from "./actions";
 
 function paraInputFecha(fecha: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -138,6 +138,49 @@ export default async function InventarioPage() {
                             type="datetime-local"
                             defaultValue={paraInputFecha(m.fecha)}
                             required
+                            className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                          />
+                          <button className="rounded bg-zinc-900 px-2 py-1 text-xs text-white hover:bg-zinc-800">
+                            Guardar
+                          </button>
+                        </form>
+                      </details>
+                      <details>
+                        <summary className="cursor-pointer text-zinc-600 underline hover:text-zinc-900">
+                          Editar datos
+                        </summary>
+                        <form
+                          action={editarEntrada.bind(null, m.id)}
+                          className="mt-1 flex w-56 flex-col gap-1"
+                        >
+                          <input
+                            name="numeroFactura"
+                            placeholder="Número de factura"
+                            defaultValue={m.numeroFactura ?? ""}
+                            className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                          />
+                          <input
+                            name="proveedor"
+                            placeholder="Proveedor"
+                            defaultValue={m.proveedor ?? ""}
+                            className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                          />
+                          <input
+                            name="costo"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Costo C$"
+                            defaultValue={m.costo ?? ""}
+                            className="rounded border border-zinc-300 px-2 py-1 text-xs"
+                          />
+                          <input
+                            name="costoUSD"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Costo US$"
+                            defaultValue={m.costoUSD ?? ""}
                             className="rounded border border-zinc-300 px-2 py-1 text-xs"
                           />
                           <button className="rounded bg-zinc-900 px-2 py-1 text-xs text-white hover:bg-zinc-800">

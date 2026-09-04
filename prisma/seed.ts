@@ -21,6 +21,55 @@ type DatosEquipo = {
   areaId: string;
 };
 
+type SalidaHistorica = {
+  equipoId: string;
+  areaId: string;
+  tipoCombustible: "DIESEL" | "GASOLINA";
+  cantidad: number;
+  lecturaMedidor: number | null;
+  solicitanteId: string;
+  bodegueroId: string;
+  fecha: Date;
+  comentarioBodega?: string;
+};
+
+async function registrarSalidas(salidas: SalidaHistorica[]) {
+  for (const s of salidas) {
+    const solicitud = await db.solicitud.create({
+      data: {
+        equipoId: s.equipoId,
+        solicitanteId: s.solicitanteId,
+        areaId: s.areaId,
+        tipoCombustible: s.tipoCombustible,
+        cantidadSolicitada: s.cantidad,
+        lecturaMedidor: s.lecturaMedidor,
+        fechaSolicitud: s.fecha,
+        estado: "DESPACHADA",
+        cantidadDespachada: s.cantidad,
+        fechaDespacho: s.fecha,
+        bodegueroId: s.bodegueroId,
+        comentarioBodega: s.comentarioBodega,
+      },
+    });
+    await db.movimientoInventario.create({
+      data: {
+        tipo: "SALIDA",
+        tipoCombustible: s.tipoCombustible,
+        cantidad: s.cantidad,
+        usuarioId: s.bodegueroId,
+        solicitudId: solicitud.id,
+        fecha: s.fecha,
+      },
+    });
+    if (s.lecturaMedidor != null) {
+      await db.equipo.update({
+        where: { id: s.equipoId },
+        data: { lecturaActual: s.lecturaMedidor },
+      });
+    }
+  }
+}
+
 async function upsertEquipoPorNombre(datos: DatosEquipo) {
   const existente = await db.equipo.findFirst({
     where: { nombre: datos.nombre },
@@ -309,18 +358,6 @@ async function main() {
       },
     });
 
-    type SalidaHistorica = {
-      equipoId: string;
-      areaId: string;
-      tipoCombustible: "DIESEL" | "GASOLINA";
-      cantidad: number;
-      lecturaMedidor: number | null;
-      solicitanteId: string;
-      bodegueroId: string;
-      fecha: Date;
-      comentarioBodega?: string;
-    };
-
     const salidas: SalidaHistorica[] = [
       {
         equipoId: xwolf300.id,
@@ -435,40 +472,7 @@ async function main() {
       },
     ];
 
-    for (const s of salidas) {
-      const solicitud = await db.solicitud.create({
-        data: {
-          equipoId: s.equipoId,
-          solicitanteId: s.solicitanteId,
-          areaId: s.areaId,
-          tipoCombustible: s.tipoCombustible,
-          cantidadSolicitada: s.cantidad,
-          lecturaMedidor: s.lecturaMedidor,
-          fechaSolicitud: s.fecha,
-          estado: "DESPACHADA",
-          cantidadDespachada: s.cantidad,
-          fechaDespacho: s.fecha,
-          bodegueroId: s.bodegueroId,
-          comentarioBodega: s.comentarioBodega,
-        },
-      });
-      await db.movimientoInventario.create({
-        data: {
-          tipo: "SALIDA",
-          tipoCombustible: s.tipoCombustible,
-          cantidad: s.cantidad,
-          usuarioId: s.bodegueroId,
-          solicitudId: solicitud.id,
-          fecha: s.fecha,
-        },
-      });
-      if (s.lecturaMedidor != null) {
-        await db.equipo.update({
-          where: { id: s.equipoId },
-          data: { lecturaActual: s.lecturaMedidor },
-        });
-      }
-    }
+    await registrarSalidas(salidas);
   }
 
   // --- Inventario inicial: combustible que ya existía antes de usar el sistema ---
@@ -498,6 +502,104 @@ async function main() {
         fecha: new Date("2026-08-19T08:00:00"),
       },
     });
+  }
+
+  // --- Tercera carga histórica: compras y despachos del 3 de agosto ---
+  const yaImportado3 = await db.movimientoInventario.findFirst({
+    where: { costo: 3357.49, tipoCombustible: "GASOLINA" },
+  });
+
+  if (!yaImportado3) {
+    const PRECIO_USD_GASOLINA = 1.3;
+
+    await db.movimientoInventario.create({
+      data: {
+        tipo: "ENTRADA",
+        tipoCombustible: "DIESEL",
+        cantidad: 43.5,
+        costo: 1900.17,
+        usuarioId: bodega.id,
+        fecha: new Date("2026-08-03T07:00:00"),
+      },
+    });
+    await db.movimientoInventario.create({
+      data: {
+        tipo: "ENTRADA",
+        tipoCombustible: "GASOLINA",
+        cantidad: 69.47,
+        costo: 3357.49,
+        costoUSD: Number((69.47 * PRECIO_USD_GASOLINA).toFixed(2)),
+        proveedor: "Agroservicios Nagarote",
+        usuarioId: bodega.id,
+        fecha: new Date("2026-08-03T07:05:00"),
+      },
+    });
+    await db.movimientoInventario.create({
+      data: {
+        tipo: "ENTRADA",
+        tipoCombustible: "GASOLINA",
+        cantidad: 60.62,
+        costo: 2930,
+        costoUSD: Number((60.62 * PRECIO_USD_GASOLINA).toFixed(2)),
+        proveedor: "Agroservicios Nagarote",
+        usuarioId: bodega.id,
+        fecha: new Date("2026-08-03T07:10:00"),
+      },
+    });
+    await db.movimientoInventario.create({
+      data: {
+        tipo: "ENTRADA",
+        tipoCombustible: "GASOLINA",
+        cantidad: 50.89,
+        costo: 2459.97,
+        costoUSD: Number((50.89 * PRECIO_USD_GASOLINA).toFixed(2)),
+        proveedor: "Agroservicios Nagarote",
+        usuarioId: bodega.id,
+        fecha: new Date("2026-08-03T07:15:00"),
+      },
+    });
+    await db.movimientoInventario.create({
+      data: {
+        tipo: "ENTRADA",
+        tipoCombustible: "DIESEL",
+        cantidad: 59.5,
+        usuarioId: bodega.id,
+        fecha: new Date("2026-08-03T10:24:00"),
+      },
+    });
+    await db.movimientoInventario.create({
+      data: {
+        tipo: "ENTRADA",
+        tipoCombustible: "DIESEL",
+        cantidad: 48.9,
+        usuarioId: bodega.id,
+        fecha: new Date("2026-08-03T11:29:00"),
+      },
+    });
+
+    const salidas3: SalidaHistorica[] = [
+      { equipoId: xwolf550.id, areaId: areaOyM.id, tipoCombustible: "GASOLINA", cantidad: 20, lecturaMedidor: null, solicitanteId: solicitanteOyM.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:00:00") },
+      { equipoId: sx1.id, areaId: areaSS.id, tipoCombustible: "GASOLINA", cantidad: 11, lecturaMedidor: null, solicitanteId: solicitanteSS.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:05:00") },
+      { equipoId: ybr.id, areaId: areaSS.id, tipoCombustible: "GASOLINA", cantidad: 11, lecturaMedidor: null, solicitanteId: solicitanteSS.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:10:00") },
+      { equipoId: xwolf550.id, areaId: areaOyM.id, tipoCombustible: "GASOLINA", cantidad: 22, lecturaMedidor: null, solicitanteId: solicitanteOyM.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:15:00") },
+      { equipoId: sx1.id, areaId: areaSS.id, tipoCombustible: "GASOLINA", cantidad: 11, lecturaMedidor: null, solicitanteId: solicitanteSS.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:20:00") },
+      { equipoId: camionHino.id, areaId: areaSP.id, tipoCombustible: "DIESEL", cantidad: 59.5, lecturaMedidor: null, solicitanteId: bodega.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:25:00") },
+      { equipoId: xwolf300.id, areaId: areaOyM.id, tipoCombustible: "GASOLINA", cantidad: 15, lecturaMedidor: null, solicitanteId: solicitanteOyM.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:30:00") },
+      { equipoId: xwolf550.id, areaId: areaOyM.id, tipoCombustible: "GASOLINA", cantidad: 19, lecturaMedidor: null, solicitanteId: solicitanteOyM.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:35:00") },
+      { equipoId: xwolf300.id, areaId: areaOyM.id, tipoCombustible: "GASOLINA", cantidad: 13, lecturaMedidor: null, solicitanteId: solicitanteOyM.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:40:00") },
+      { equipoId: motoguadana.id, areaId: areaSP.id, tipoCombustible: "GASOLINA", cantidad: 4, lecturaMedidor: null, solicitanteId: bodega.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:45:00") },
+      { equipoId: sx1.id, areaId: areaSS.id, tipoCombustible: "GASOLINA", cantidad: 11, lecturaMedidor: null, solicitanteId: solicitanteSS.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:50:00") },
+      { equipoId: xwolf550.id, areaId: areaOyM.id, tipoCombustible: "GASOLINA", cantidad: 10, lecturaMedidor: null, solicitanteId: solicitanteOyM.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T10:55:00") },
+      { equipoId: xwolf300.id, areaId: areaOyM.id, tipoCombustible: "GASOLINA", cantidad: 9, lecturaMedidor: null, solicitanteId: solicitanteOyM.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T11:00:00") },
+      { equipoId: ybr.id, areaId: areaSS.id, tipoCombustible: "GASOLINA", cantidad: 12, lecturaMedidor: null, solicitanteId: solicitanteSS.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T11:05:00") },
+      { equipoId: xwolf300.id, areaId: areaOyM.id, tipoCombustible: "GASOLINA", cantidad: 13, lecturaMedidor: null, solicitanteId: solicitanteOyM.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T11:10:00") },
+      { equipoId: sx1.id, areaId: areaSS.id, tipoCombustible: "GASOLINA", cantidad: 11, lecturaMedidor: null, solicitanteId: solicitanteSS.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T11:15:00") },
+      { equipoId: xwolf300.id, areaId: areaOyM.id, tipoCombustible: "GASOLINA", cantidad: 17, lecturaMedidor: null, solicitanteId: solicitanteOyM.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T11:20:00") },
+      { equipoId: motoguadana.id, areaId: areaSP.id, tipoCombustible: "GASOLINA", cantidad: 4, lecturaMedidor: null, solicitanteId: bodega.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T11:25:00") },
+      { equipoId: camionHino.id, areaId: areaSP.id, tipoCombustible: "DIESEL", cantidad: 48.9, lecturaMedidor: null, solicitanteId: bodega.id, bodegueroId: bodega.id, fecha: new Date("2026-08-03T11:30:00") },
+    ];
+
+    await registrarSalidas(salidas3);
   }
 
   // --- Correcciones puntuales pedidas por el usuario ---

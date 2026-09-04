@@ -74,6 +74,42 @@ export async function editarFechaMovimiento(id: string, formData: FormData) {
   revalidatePath("/solicitudes");
 }
 
+export async function editarEntrada(id: string, formData: FormData) {
+  await requireRol("ADMIN");
+
+  const movimiento = await db.movimientoInventario.findUnique({ where: { id } });
+  if (!movimiento) throw new Error("Movimiento no encontrado.");
+  if (movimiento.tipo !== "ENTRADA") {
+    throw new Error("Solo se pueden editar entradas, no despachos.");
+  }
+
+  const numeroFactura = String(formData.get("numeroFactura") ?? "").trim();
+  const proveedor = String(formData.get("proveedor") ?? "").trim();
+  const costoRaw = String(formData.get("costo") ?? "").trim();
+  const costo = costoRaw ? Number(costoRaw) : null;
+  const costoUSDRaw = String(formData.get("costoUSD") ?? "").trim();
+  const costoUSD = costoUSDRaw ? Number(costoUSDRaw) : null;
+
+  if (costo != null && (Number.isNaN(costo) || costo < 0)) {
+    throw new Error("El costo en córdobas no es válido.");
+  }
+  if (costoUSD != null && (Number.isNaN(costoUSD) || costoUSD < 0)) {
+    throw new Error("El costo en dólares no es válido.");
+  }
+
+  await db.movimientoInventario.update({
+    where: { id },
+    data: {
+      numeroFactura: numeroFactura || null,
+      proveedor: proveedor || null,
+      costo,
+      costoUSD,
+    },
+  });
+
+  revalidatePath("/inventario");
+}
+
 export async function eliminarEntrada(id: string) {
   await requireRol("ADMIN");
 
