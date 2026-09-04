@@ -22,6 +22,7 @@ export default async function Nav() {
 
   if (rol === "BODEGA" || rol === "ADMIN" || rol === "CONSULTA") {
     links.push({ href: "/inventario", label: "Inventario" });
+    links.push({ href: "/consumo", label: "Consumo" });
   }
   if (rol === "BODEGA" || rol === "ADMIN") {
     links.push({ href: "/equipos", label: "Equipos" });

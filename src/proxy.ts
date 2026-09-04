@@ -7,6 +7,7 @@ const RUTAS_POR_ROL: Record<string, string[]> = {
   "/usuarios": ["ADMIN"],
   "/equipos": ["ADMIN", "BODEGA"],
   "/inventario": ["ADMIN", "BODEGA", "CONSULTA"],
+  "/consumo": ["ADMIN", "BODEGA", "CONSULTA"],
   "/reportes": ["ADMIN"],
 };
 

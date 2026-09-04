@@ -134,3 +134,65 @@ export async function getHistorialRendimientoPorEquipo(): Promise<
   }
   return filas;
 }
+
+export type ConsumoDetalle = {
+  fecha: Date;
+  cantidad: number;
+  solicitante: string;
+  folio: number;
+};
+
+export type ConsumoEquipo = {
+  equipoId: string;
+  codigo: string;
+  nombre: string;
+  areaNombre: string;
+  tipoCombustible: string;
+  totalLitros: number;
+  veces: number;
+  detalle: ConsumoDetalle[];
+};
+
+export async function getConsumoPorEquipo(
+  desde: Date,
+  hasta: Date,
+  equipoId?: string,
+): Promise<ConsumoEquipo[]> {
+  const solicitudes = await db.solicitud.findMany({
+    where: {
+      estado: "DESPACHADA",
+      fechaDespacho: { gte: desde, lte: hasta },
+      ...(equipoId ? { equipoId } : {}),
+    },
+    include: { equipo: { include: { area: true } }, solicitante: true },
+    orderBy: { fechaDespacho: "desc" },
+  });
+
+  const porEquipo = new Map<string, ConsumoEquipo>();
+  for (const s of solicitudes) {
+    if (s.cantidadDespachada == null) continue;
+    const actual = porEquipo.get(s.equipoId) ?? {
+      equipoId: s.equipoId,
+      codigo: s.equipo.codigo,
+      nombre: s.equipo.nombre,
+      areaNombre: s.equipo.area.nombre,
+      tipoCombustible: s.tipoCombustible,
+      totalLitros: 0,
+      veces: 0,
+      detalle: [],
+    };
+    actual.totalLitros += s.cantidadDespachada;
+    actual.veces += 1;
+    actual.detalle.push({
+      fecha: s.fechaDespacho ?? s.fechaSolicitud,
+      cantidad: s.cantidadDespachada,
+      solicitante: s.solicitante.nombre,
+      folio: s.id,
+    });
+    porEquipo.set(s.equipoId, actual);
+  }
+
+  return Array.from(porEquipo.values()).sort(
+    (a, b) => b.totalLitros - a.totalLitros,
+  );
+}
