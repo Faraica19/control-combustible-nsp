@@ -8,6 +8,10 @@ export function formatFechaCorta(fecha: Date): string {
   return fecha.toLocaleDateString("es", { timeZone: ZONA_HORARIA });
 }
 
+export function formatHora(fecha: Date): string {
+  return fecha.toLocaleTimeString("es", { timeZone: ZONA_HORARIA });
+}
+
 /** Valor para un <input type="datetime-local"> mostrando la hora de Nicaragua. */
 export function paraInputFechaLocal(fecha: Date): string {
   const partes = new Intl.DateTimeFormat("en-CA", {

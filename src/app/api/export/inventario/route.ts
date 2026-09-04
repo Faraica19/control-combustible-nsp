@@ -2,7 +2,7 @@ import { requireRol } from "@/lib/permisos";
 import { db } from "@/lib/db";
 import { getSaldos, getCostoPromedio } from "@/lib/inventario";
 import { generarExcelMultihoja, respuestaExcel } from "@/lib/excel";
-import { formatFecha } from "@/lib/fecha";
+import { formatFechaCorta, formatHora } from "@/lib/fecha";
 
 export async function GET() {
   await requireRol("BODEGA", "ADMIN", "CONSULTA");
@@ -23,7 +23,8 @@ export async function GET() {
     {
       nombre: "Entradas",
       columnas: [
-        { header: "Fecha", key: "fecha", width: 20 },
+        { header: "Fecha", key: "fecha", width: 14 },
+        { header: "Hora", key: "hora", width: 12 },
         { header: "Combustible", key: "combustible", width: 14 },
         { header: "Cantidad (L)", key: "cantidad", width: 14 },
         { header: "Número de factura", key: "factura", width: 20 },
@@ -33,7 +34,8 @@ export async function GET() {
         { header: "Registrado por", key: "usuario", width: 20 },
       ],
       filas: entradas.map((m) => ({
-        fecha: formatFecha(m.fecha),
+        fecha: formatFechaCorta(m.fecha),
+        hora: formatHora(m.fecha),
         combustible: m.tipoCombustible,
         cantidad: m.cantidad,
         factura: m.numeroFactura ?? "",
@@ -46,19 +48,25 @@ export async function GET() {
     {
       nombre: "Salidas",
       columnas: [
-        { header: "Fecha", key: "fecha", width: 20 },
+        { header: "Fecha", key: "fecha", width: 14 },
+        { header: "Hora", key: "hora", width: 12 },
+        { header: "Código equipo", key: "codigoEquipo", width: 16 },
+        { header: "Equipo", key: "equipo", width: 28 },
         { header: "Combustible", key: "combustible", width: 14 },
         { header: "Cantidad (L)", key: "cantidad", width: 14 },
         { header: "Valor estimado (C$)", key: "valor", width: 18 },
         { header: "Valor estimado (US$)", key: "valorUSD", width: 18 },
-        { header: "Solicitud", key: "solicitud", width: 30 },
+        { header: "Folio solicitud", key: "folio", width: 14 },
         { header: "Despachado por", key: "usuario", width: 20 },
       ],
       filas: salidas.map((m) => {
         const costoCordobas = costoPromedio[m.tipoCombustible].cordobas;
         const costoUsd = costoPromedio[m.tipoCombustible].usd;
         return {
-          fecha: formatFecha(m.fecha),
+          fecha: formatFechaCorta(m.fecha),
+          hora: formatHora(m.fecha),
+          codigoEquipo: m.solicitud?.equipo.codigo ?? "",
+          equipo: m.solicitud?.equipo.nombre ?? "",
           combustible: m.tipoCombustible,
           cantidad: m.cantidad,
           valor:
@@ -67,9 +75,7 @@ export async function GET() {
               : "",
           valorUSD:
             costoUsd != null ? Number((m.cantidad * costoUsd).toFixed(2)) : "",
-          solicitud: m.solicitud
-            ? `#${m.solicitud.id} (${m.solicitud.equipo.nombre})`
-            : "",
+          folio: m.solicitud ? m.solicitud.id : "",
           usuario: m.usuario.nombre,
         };
       }),

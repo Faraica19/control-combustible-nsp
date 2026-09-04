@@ -1,8 +1,15 @@
 import ExcelJS from "exceljs";
 
+type Columna = {
+  header: string;
+  key: string;
+  width?: number;
+  style?: Partial<ExcelJS.Style>;
+};
+
 export async function generarExcel(
   hoja: string,
-  columnas: { header: string; key: string; width?: number }[],
+  columnas: Columna[],
   filas: Record<string, unknown>[],
 ) {
   const workbook = new ExcelJS.Workbook();
@@ -18,7 +25,7 @@ export async function generarExcel(
 export async function generarExcelMultihoja(
   hojas: {
     nombre: string;
-    columnas: { header: string; key: string; width?: number }[];
+    columnas: Columna[];
     filas: Record<string, unknown>[];
   }[],
 ) {
